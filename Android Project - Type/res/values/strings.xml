@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OCV Color Blob Detection</string>
+    <string name="go">menj</string>
+    <string name="left">balra</string>
+    <string name="right">jobra</string>
+    <string name="forward">előre</string>
+    <string name="backward">hátra</string>
+    <string name="turn">fordulj</string>
+    <string name="detected">fényforrás észlelve</string>
+</resources>
