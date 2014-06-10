@@ -180,7 +180,7 @@ public class MainManager {
 		else
 		{
 			Log.v("ford", "A monitor a kep kozepen van");
-			mDEBUG_TEXT = "Király";
+			mDEBUG_TEXT = "Kiraly";
 			return true;
 		}
 		return false;
