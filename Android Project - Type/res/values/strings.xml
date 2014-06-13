@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">OCV Color Blob Detection</string>
+    <string name="app_name">AndroidProject</string>
     <string name="go">menj</string>
     <string name="left">balra</string>
     <string name="right">jobra</string>
