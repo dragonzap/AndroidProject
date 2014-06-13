@@ -76,10 +76,16 @@ public class CamManager {
 			
 			// TODO: sokminden
 			
-			//if (widthTop+widthBottom > heightLeft+heightRight)
-				//MatOfPoint points = new MatOfPoint(result.get(i));
+			// Kepernyo arany kiszamitasa
+			double h1 = Math.min(heightLeft, heightRight);
+			double h2 = Math.max(heightLeft,heightRight);
+			double d = (result.get(i)[0].x + result.get(i)[3].x - result.get(i)[1].x - result.get(i)[2].x) / 2.f;
+			double w = (d*h2) / (h2 -h1);
+			double asp = w/h2;
 			
-				double area = widthTop * heightRight;
+			if ( Math.abs(asp - 16/9) < 0.01f || Math.abs(asp - 4/3) < 0.01f || Math.abs(asp - 16/10) < 0.01f )	//jo keparany
+			{
+				double area = w * h2;
 				if (area > maxArea)
 				{
 					mMonitor = result.get(i);
@@ -87,11 +93,12 @@ public class CamManager {
 					mFound = true;
 					
 				}
+			}
 		}
 		Log.v("ford", "Negyszog felso szele: "+Double.toString(getDistance(mMonitor[0], mMonitor[1])));
-		Log.v("ford", "Negyszog jobb szele: "+Double.toString(getDistance(mMonitor[2], mMonitor[3])));
-		Log.v("ford", "Negyszog also szele: "+Double.toString(getDistance(mMonitor[1], mMonitor[3])));
-		Log.v("ford", "Negyszog bal szele: "+Double.toString(getDistance(mMonitor[1], mMonitor[2])));
+		Log.v("ford", "Negyszog jobb szele: "+Double.toString(getDistance(mMonitor[1], mMonitor[2])));
+		Log.v("ford", "Negyszog also szele: "+Double.toString(getDistance(mMonitor[2], mMonitor[3])));
+		Log.v("ford", "Negyszog bal szele: "+Double.toString(getDistance(mMonitor[3], mMonitor[0])));
 		return mFound;
 	}
 	
