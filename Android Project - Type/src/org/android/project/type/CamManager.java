@@ -69,36 +69,45 @@ public class CamManager {
 		double maxArea = 10;
 		for (int i = 0; i < result.size(); i++)
 		{
-			double widthTop = getDistance(result.get(i)[0], result.get(i)[1]);
-			double widthBottom = getDistance(result.get(i)[2], result.get(i)[3]);
+			/*double widthTop = getDistance(result.get(i)[0], result.get(i)[1]);
+			double widthBottom = getDistance(result.get(i)[2], result.get(i)[3]);*/
 			double heightLeft = getDistance(result.get(i)[0], result.get(i)[3]);
 			double heightRight = getDistance(result.get(i)[1], result.get(i)[2]);
-			
+
 			// TODO: sokminden
-			
+
 			// Kepernyo arany kiszamitasa
-			double h1 = Math.min(heightLeft, heightRight);
-			double h2 = Math.max(heightLeft,heightRight);
-			double d = (result.get(i)[0].x + result.get(i)[3].x - result.get(i)[1].x - result.get(i)[2].x) / 2.f;
-			double w = (d*h2) / (h2 -h1);
-			double asp = w/h2;
+			double h1 = Math.min(heightLeft, heightRight);	//kissebb oldal
+			double h2 = Math.max(heightLeft, heightRight);	//nagyobb oldal
+			double d = Math.abs(result.get(i)[0].x + result.get(i)[3].x - result.get(i)[1].x - result.get(i)[2].x) / 2.f;	//ket oldal kozott latott tavolsag
+			double t = Math.tan(Math.asin((h2-h1)/h2))*d;	//ket oldal kozti melysegi tavolsag
 			
-			if ( Math.abs(asp - 16/9) < 0.01f || Math.abs(asp - 4/3) < 0.01f || Math.abs(asp - 16/10) < 0.01f )	//jo keparany
+			double w;	// felso el valodi hossza
+			if (h2 != h1)	//ha nem egyenlok akkor
+				w = Math.sqrt(d*d + t*t);
+			else
+				w = getDistance(result.get(i)[0], result.get(i)[1]);
+
+			double area = w * h2;	// terület
+			double asp = w / h2;	// keparany
+
+			if ( Math.abs(asp - 16.f/9.f) < 0.1f || Math.abs(asp - 4.f/3.f) < 0.1f )	//jo keparany
 			{
-				double area = w * h2;
 				if (area > maxArea)
 				{
 					mMonitor = result.get(i);
 					maxArea = area;
 					mFound = true;
-					
 				}
 			}
 		}
-		Log.v("ford", "Negyszog felso szele: "+Double.toString(getDistance(mMonitor[0], mMonitor[1])));
-		Log.v("ford", "Negyszog jobb szele: "+Double.toString(getDistance(mMonitor[1], mMonitor[2])));
-		Log.v("ford", "Negyszog also szele: "+Double.toString(getDistance(mMonitor[2], mMonitor[3])));
-		Log.v("ford", "Negyszog bal szele: "+Double.toString(getDistance(mMonitor[3], mMonitor[0])));
+		if (mFound)
+		{
+			Log.v("ford", "Negyszog felso szele: "+Double.toString(getDistance(mMonitor[0], mMonitor[1])));
+			Log.v("ford", "Negyszog jobb szele: "+Double.toString(getDistance(mMonitor[1], mMonitor[2])));
+			Log.v("ford", "Negyszog also szele: "+Double.toString(getDistance(mMonitor[2], mMonitor[3])));
+			Log.v("ford", "Negyszog bal szele: "+Double.toString(getDistance(mMonitor[3], mMonitor[0])));
+		}
 		return mFound;
 	}
 	
