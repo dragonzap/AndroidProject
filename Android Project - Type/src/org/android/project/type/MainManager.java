@@ -33,7 +33,7 @@ public class MainManager {
 		switch (status) {
 		case SCAN_SQUARES:
 			Log.v("ford", "Negyszogek keresese");
-			if (mCam.scanSquare()) {
+			if (mCam.scanSquares()) {
 				spiralVar = 0;
 				status = STATUS_ENUM.MONITOR_DETECT;
 				update();
@@ -81,7 +81,7 @@ public class MainManager {
 			}
 			break;
 		case UPDATE_IMAGE:
-			if (mCam.scanSquare())
+			if (mCam.scanSquares())
 			{
 				status = STATUS_ENUM.MONITOR_DETECT;
 				update();

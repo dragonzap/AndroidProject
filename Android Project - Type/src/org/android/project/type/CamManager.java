@@ -16,25 +16,28 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 public class CamManager {
+
+	// SETTINGS:
+	static int thresh = 50;
+	static int thresh_levels = 1;
+	static int min_square_size = 1000;
+	static double aspect_thres = 0.2f;
+
 	public boolean mFound = false;
 	public Point[] mMonitor = new Point[4];
 	public Point mCenter, scrCenter;
-	public String cDEBUG_TEXT; 
-	
-	// Settings
-	static double aspect_thres = 0.2f;
-	
+
 	private List<Point[]> result = new ArrayList<Point[]>();
 	private Mat mImage, mOutImg;
-	
+
 	// Cache
 	Mat gray, timg;
 
 	public CamManager(int width, int height) {
 		mCenter = new Point();
 		scrCenter = new Point();
-		scrCenter.x = width/2;
-		scrCenter.y = height/2;
+		scrCenter.x = width / 2;
+		scrCenter.y = height / 2;
 		mImage = new Mat(width, height, 0);
 		mOutImg = new Mat(width, height, 0);
 		gray = new Mat();
@@ -60,8 +63,8 @@ public class CamManager {
 	public void drawSquars() {
 		for (int s = 0; s < result.size(); s++) {
 			for (int i = 0; i < 4; i++) {
-				Core.line(mOutImg, result.get(s)[i], result.get(s)[(i + 1) % 4],
-						new Scalar(0, 255, 255));
+				Core.line(mOutImg, result.get(s)[i],
+						result.get(s)[(i + 1) % 4], new Scalar(0, 255, 255));
 			}
 		}
 	}
@@ -69,166 +72,128 @@ public class CamManager {
 	public boolean selectBestSquare() {
 		mFound = false;
 		double maxArea = 10;
-		for (int i = 0; i < result.size(); i++)
-		{
-			/*double widthTop = getDistance(result.get(i)[0], result.get(i)[1]);
-			double widthBottom = getDistance(result.get(i)[2], result.get(i)[3]);*/
+		for (int i = 0; i < result.size(); i++) {
+			/* double widthTop = getDistance(result.get(i)[0], result.get(i)[1]);
+			double widthBottom = getDistance(result.get(i)[2], result.get(i)[3]); */
 			double heightLeft = getDistance(result.get(i)[0], result.get(i)[3]);
 			double heightRight = getDistance(result.get(i)[1], result.get(i)[2]);
 
 			// Kepernyo arany kiszamitasa
-			double h1 = Math.min(heightLeft, heightRight);	//kissebb oldal
-			double h2 = Math.max(heightLeft, heightRight);	//nagyobb oldal
-			double d = Math.abs(result.get(i)[0].x + result.get(i)[3].x - result.get(i)[1].x - result.get(i)[2].x) / 2.f;	//ket oldal kozott latott tavolsag
-			double t = Math.tan(Math.asin((h2-h1)/h2))*d;	//ket oldal kozti melysegi tavolsag
-			
-			double w;	// felso el valodi hossza
-			if (h2 != h1)	//ha nem egyenlok akkor
-				w = Math.sqrt(d*d + t*t);
+			double h1 = Math.min(heightLeft, heightRight); // kissebb oldal
+			double h2 = Math.max(heightLeft, heightRight); // nagyobb oldal
+			double d = Math.abs(result.get(i)[0].x + result.get(i)[3].x - result.get(i)[1].x - result.get(i)[2].x) / 2.f; // ket oldal kozott latott tavolsag
+			double t = Math.tan(Math.asin((h2 - h1) / h2)) * d; // ket oldal kozti melysegi tavolsag
+
+			double w; // felso el valodi hossza
+			if (h2 != h1) // ha nem egyenlok akkor
+				w = Math.sqrt(d * d + t * t);
 			else
 				w = getDistance(result.get(i)[0], result.get(i)[1]);
 
-			double asp = w / h2;	// keparany
+			double asp = w / h2; // keparany
 
-			if (Math.abs(asp - 16.f/9.f) < aspect_thres || Math.abs(asp - 4.f/3.f) < aspect_thres )	//jo keparany
+			if (Math.abs(asp - 16.f / 9.f) < aspect_thres
+					|| Math.abs(asp - 4.f / 3.f) < aspect_thres) // jo keparany
 			{
-				double area = w * h2;	// terület
-				if (area > maxArea)
-				{
+				double area = w * h2; // terület
+				if (area > maxArea) {
 					mMonitor = result.get(i);
 					maxArea = area;
 					mFound = true;
 				}
 			}
 		}
-		if (mFound)
-		{
-			Log.v("ford", "Negyszog felso szele: "+Double.toString(getDistance(mMonitor[0], mMonitor[1])));
-			Log.v("ford", "Negyszog jobb szele: "+Double.toString(getDistance(mMonitor[1], mMonitor[2])));
-			Log.v("ford", "Negyszog also szele: "+Double.toString(getDistance(mMonitor[2], mMonitor[3])));
-			Log.v("ford", "Negyszog bal szele: "+Double.toString(getDistance(mMonitor[3], mMonitor[0])));
+		if (mFound) {
+			Log.v("ford", "Negyszog felso szele: " + Double.toString(getDistance(mMonitor[0], mMonitor[1])));
+			Log.v("ford", "Negyszog jobb szele: " + Double.toString(getDistance(mMonitor[1], mMonitor[2])));
+			Log.v("ford", "Negyszog also szele: " + Double.toString(getDistance(mMonitor[2], mMonitor[3])));
+			Log.v("ford", "Negyszog bal szele: " + Double.toString(getDistance(mMonitor[3], mMonitor[0])));
 		}
 		return mFound;
 	}
-	
-	public double getDistance(Point a, Point b)
-	{
-		return Math.sqrt(Math.pow(a.x - b.x,2) + Math.pow(a.y - b.y,2));  
+
+	public double getDistance(Point a, Point b) {
+		return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
 	}
 
-	public boolean scanSquare() {
+	public boolean scanSquares() {
+		if (mImage.empty())
+			return false;
+
 		result.clear();
 
-		int thresh = 50, N = 1;
-		
-		if (mImage.empty())
-		{
-			return false;
-		}
-
-		// down-scale and upscale the image to filter out the noise
+		// zajtalanitas
 		Imgproc.pyrDown(mImage, timg, new Size(mImage.cols() / 2.0, mImage.rows() / 2));
 		Imgproc.pyrUp(timg, timg, mImage.size());
 
-		List<Mat> timgL = new ArrayList<Mat>();
-		List<Mat> grayL = new ArrayList<Mat>();
+		List<Mat> timgL = new ArrayList<Mat>(), grayL = new ArrayList<Mat>();
 		timgL.add(timg);
 		grayL.add(new Mat(mImage.size(), CvType.CV_8U));
-
 
 		for (int c = 0; c < 3; c++) {
 			int ch[] = { 1, 0 };
 			MatOfInt fromto = new MatOfInt(ch);
 			Core.mixChannels(timgL, grayL, fromto);
 
-			// try several threshold levels
-			for (int l = 0; l < N; l++) {
+			// kulombozo kuszobszintek
+			for (int l = 0; l < thresh_levels; l++) {
 				Mat output = grayL.get(0);
-				// hack: use Canny instead of zero threshold level.
-				// Canny helps to catch squares with gradient shading
-				if (l == 0) {
-					// apply Canny. Take the upper threshold from slider
-					// and set the lower to 0 (which forces edges merging)
+				if (l == 0)
+				{
 					Imgproc.Canny(output, gray, thresh, 5);
-					// dilate canny output to remove potential
-					// holes between edge segments
 					Imgproc.dilate(gray, gray, new Mat(), new Point(-1, -1), 1);
 				} else {
-					// output = output >= (i+1)*255/N;
-					Imgproc.threshold(output, gray, (l + 1) * 255 / N, 255,
-							Imgproc.THRESH_BINARY);
+					Imgproc.threshold(output, gray, (l + 1) * 255 / thresh_levels, 255, Imgproc.THRESH_BINARY);
 				}
 
-				// find contours and store them all as a list
+				// korvonal lista
 				List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-				Imgproc.findContours(gray, contours, new Mat(),
-						Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
-
+				Imgproc.findContours(gray, contours, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
 				MatOfPoint2f approx = new MatOfPoint2f();
 
-				// test each contour
+				// konturok ellenorzese
 				for (int i = 0; i < contours.size(); i++) {
-					MatOfPoint2f newMat = new MatOfPoint2f(contours.get(i)
-							.toArray());
-
-					// approximate contour with accuracy proportional
-					// to the contour perimeter
-					Imgproc.approxPolyDP(newMat, approx,
-							Imgproc.arcLength(newMat, true) * 0.02f, true);
-
-					// square contours should have 4 vertices after
-					// approximation
-					// relatively large area (to filter out noisy contours)
-					// and be convex.
-					// Note: absolute value of an area is used because
-					// area may be positive or negative - in accordance with the
-					// contour orientation
+					MatOfPoint2f newMat = new MatOfPoint2f(contours.get(i).toArray());
+					Imgproc.approxPolyDP(newMat, approx, Imgproc.arcLength(newMat, true) * 0.02f, true);
 					MatOfPoint points = new MatOfPoint(approx.toArray());
-					if (points.toArray().length == 4
-							&& (Math.abs(Imgproc.contourArea(approx)) > 1000)
-							&& Imgproc.isContourConvex(points)) {
 
+					// hasznos negyszogek kivalogatasa
+					if (points.toArray().length == 4 && Math.abs(Imgproc.contourArea(approx)) > min_square_size && Imgproc.isContourConvex(points)) {
 						result.add(sortPoints(points));
 					}
 				}
 			}
 		}
-		
 		timg.release();
-		//gray0.release();
 		return result.size() != 0;
 	}
-	
+
 	/*
 	 * 0------------1 Sorba rendezi a pontokat 
-	 * |			| így összehasonlíthatók
-	 * |			| lesznek a nögyszögek
+	 * |			| így osszehasonlithatok
+	 * |			| lesznek a negyszogek
 	 * 3------------2
 	 */
 	private Point[] sortPoints(MatOfPoint _points) {
 		Point tmp;
-
 		Point[] sort = _points.toArray();
-		for (int i = 0; i < 4; i++) {	//Rendezés y szerint
-			for (int j = i+1; j < 4; j++) {
-				if (sort[i].y > sort[j].y)
-				{	//csere
+		for (int i = 0; i < 4; i++) { // Rendezes y szerint
+			for (int j = i + 1; j < 4; j++) {
+				if (sort[i].y > sort[j].y) { // csere
 					tmp = sort[j];
 					sort[j] = sort[i];
 					sort[i] = tmp;
 				}
 			}
 		}
-		
-		//Rendezés x szerint
-		if (sort[1].x > sort[0].x)
-		{	//csere
+
+		// Rendezes x szerint
+		if (sort[1].x > sort[0].x) { // csere
 			tmp = sort[1];
 			sort[1] = sort[0];
 			sort[0] = tmp;
 		}
-		if (sort[2].x > sort[3].x)
-		{	//csere
+		if (sort[2].x > sort[3].x) { // csere
 			tmp = sort[3];
 			sort[3] = sort[2];
 			sort[2] = tmp;
