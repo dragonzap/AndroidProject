@@ -71,7 +71,7 @@ public class CamManager {
 		{
 			double widthTop = getDistance(result.get(i)[0], result.get(i)[1]);
 			double widthBottom = getDistance(result.get(i)[2], result.get(i)[3]);
-			double heightLeft = getDistance(result.get(i)[1], result.get(i)[3]);
+			double heightLeft = getDistance(result.get(i)[0], result.get(i)[3]);
 			double heightRight = getDistance(result.get(i)[1], result.get(i)[2]);
 			
 			// TODO: sokminden
