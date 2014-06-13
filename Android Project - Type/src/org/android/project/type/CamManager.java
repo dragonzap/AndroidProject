@@ -21,9 +21,11 @@ public class CamManager {
 	public Point mCenter, scrCenter;
 	public String cDEBUG_TEXT; 
 	
+	// Settings
+	static double aspect_thres = 0.2f;
+	
 	private List<Point[]> result = new ArrayList<Point[]>();
 	private Mat mImage, mOutImg;
-	
 	
 	// Cache
 	Mat gray, timg;
@@ -74,8 +76,6 @@ public class CamManager {
 			double heightLeft = getDistance(result.get(i)[0], result.get(i)[3]);
 			double heightRight = getDistance(result.get(i)[1], result.get(i)[2]);
 
-			// TODO: sokminden
-
 			// Kepernyo arany kiszamitasa
 			double h1 = Math.min(heightLeft, heightRight);	//kissebb oldal
 			double h2 = Math.max(heightLeft, heightRight);	//nagyobb oldal
@@ -88,11 +88,11 @@ public class CamManager {
 			else
 				w = getDistance(result.get(i)[0], result.get(i)[1]);
 
-			double area = w * h2;	// terület
 			double asp = w / h2;	// keparany
 
-			if ( Math.abs(asp - 16.f/9.f) < 0.1f || Math.abs(asp - 4.f/3.f) < 0.1f )	//jo keparany
+			if (Math.abs(asp - 16.f/9.f) < aspect_thres || Math.abs(asp - 4.f/3.f) < aspect_thres )	//jo keparany
 			{
+				double area = w * h2;	// terület
 				if (area > maxArea)
 				{
 					mMonitor = result.get(i);
