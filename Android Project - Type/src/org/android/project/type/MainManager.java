@@ -66,7 +66,7 @@ public class MainManager {
 			Log.v("ford", "Szembe allitas");
 			if (frontBestSquare()) {
 				status = STATUS_ENUM.CLOSE_TO;
-				update(); // Ne keljen kattintani
+				update();
 			} else {
 				status = STATUS_ENUM.UPDATE_IMAGE;
 			}
@@ -151,7 +151,7 @@ public class MainManager {
 		double pxToCmVar;
 		pxToCmVar = (pxToCm * tav) / 50;
 		double oldalra;
-		oldalra = distX / pxToCmVar; // egy cm-et kell oldalra menni
+		oldalra = Math.round(distX / pxToCmVar); // egy cm-et kell oldalra menni
 		Log.v("ford", "Monitor-kamera tavolsag: " + Double.toString(tav));
 
 		if (Math.abs(distX) > faultLimit) {
@@ -199,7 +199,7 @@ public class MainManager {
 		double ford = Math.asin(currentWidth / maxWidth);
 		ford = ford * (360 / (2 * Math.PI));
 		Log.v("ford", Double.toString(ford));
-		double oldal = Math.tan(90 - ford) * tav;
+		double oldal = Math.round(Math.tan(90 - ford) * tav);
 		ford = 90 - ford;
 
 		if (heightLeft < heightRight) {
