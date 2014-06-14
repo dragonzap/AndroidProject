@@ -22,16 +22,25 @@ public class CamManager {
 	static byte THRESH_LEVEL = 1;
 	static short MIN_SQUARE_SIZE = 1000;
 	static float ASPECT_THRESH = 0.2f;
+	static int CAM_WIDTH = 1280;
+	static int CAM_HEIGHT = 800;
+	static double CAM_H_FOV = 0.58318276339d;	// tg( 60.5° / 2 )
+	static double CAM_V_FOV = 0.44732161718d;		// tg( 48.2° / 2 )
 
 	public boolean mFound = false;
 	public Point[] mMonitor = new Point[4];
-	public double mWidth = 0;
-	public double mHeight = 0;
-	public double mDist = 0;
+	public double mWidth = 0;	// px
+	public double mHeight = 0;	// px
+	public double mDist = 0;	// cm
+	public double mSize = 0;	// cm width
+	public double mDir = 0;		// radian
 	public Point mCenter, scrCenter;
 
 	private List<Point[]> result = new ArrayList<Point[]>();
 	private Mat mImage, mOutImg;
+	
+	public double pHeight1 = 0;
+	public double pHeight2 = 0;
 
 	// Cache
 	Mat gray, timg;
@@ -74,22 +83,56 @@ public class CamManager {
 
 	public boolean getMonitor()
 	{
-		if (scanSquares() && selectBestSquare())
+		boolean b = scanSquares() && selectBestSquare();
+		for (short i = 0;mFound && !b && i < 3; i++)	// ha nem talal megprobalja meg 3x
+		{
+			b = scanSquares() && selectBestSquare();
+		}
+
+		if (b)
 		{
 			mWidth  = (getDistance(mMonitor[0], mMonitor[1]) + getDistance(mMonitor[2], mMonitor[3])) / 2.f;
-			mHeight = (getDistance(mMonitor[0], mMonitor[3]) + getDistance(mMonitor[1], mMonitor[2])) / 2.f;
+			pHeight1 = getDistance(mMonitor[0], mMonitor[3]);
+			pHeight2 = getDistance(mMonitor[1], mMonitor[2]);
+			mHeight = (pHeight1 + pHeight2) / 2.f;
 		}
+		else
+			mFound = false;
+		
 		return mFound;
 	}
 
 	public boolean getDistances(int _dist_step) {
 		if (scanSquares() && selectBestSquare())
 		{
+			//Kozeppont megadasa
+			mCenter.x = 0;
+			mCenter.y = 0;
+			for (int p = 0; p < 4; p++) {
+				mCenter.x += mMonitor[p].x;
+				mCenter.y += mMonitor[p].y;
+			}
+			mCenter.x /= 4;
+			mCenter.y /= 4;
+			
 			double aWidth = (getDistance(mMonitor[0], mMonitor[1]) + getDistance(mMonitor[2], mMonitor[3])) / 2.f;
-			double aHeight = (getDistance(mMonitor[0], mMonitor[3]) + getDistance(mMonitor[1], mMonitor[2])) / 2.f;
+			double aHeight1 = getDistance(mMonitor[0], mMonitor[3]);
+			double aHeight2 = getDistance(mMonitor[1], mMonitor[2]);
+			
 			mDist = _dist_step * mWidth / (aWidth - mWidth);
-			mDist += _dist_step * mHeight / (aHeight - mHeight);
+			mDist += _dist_step * mHeight / ((aHeight1 + aHeight2)/2 - mHeight);
 			mDist /= 2.f;
+			
+			pHeight1 = _dist_step * pHeight1 / (aHeight1 - pHeight1);
+			pHeight2 = _dist_step * pHeight2 / (aHeight2 - pHeight2);
+			
+			double d = Math.abs(mMonitor[0].x + mMonitor[3].x - mMonitor[1].x - mMonitor[2].x) / 2.f;
+			mSize = (d / CAM_HEIGHT) * mDist * CAM_H_FOV; 
+
+			mDir = Math.atan((pHeight1 - pHeight2) / mSize);
+			
+			mWidth = aWidth;
+			mHeight = (aHeight1 + aHeight2)/2;
 			return true;
 		}
 		return false;
@@ -164,7 +207,8 @@ public class CamManager {
 			double h1 = Math.min(heightLeft, heightRight); // kissebb oldal
 			double h2 = Math.max(heightLeft, heightRight); // nagyobb oldal
 			double d = Math.abs(result.get(i)[0].x + result.get(i)[3].x - result.get(i)[1].x - result.get(i)[2].x) / 2.f; // ket oldal kozott latott tavolsag
-			double t = Math.tan(Math.asin((h2 - h1) / h2)) * d; // ket oldal kozti melysegi tavolsag
+			double dir = Math.asin((h2 - h1) / h2);
+			double t = Math.tan(dir) * d; // ket oldal kozti melysegi tavolsag
 
 			double w; // felso el valodi hossza
 			if (h2 != h1) // ha nem egyenlok akkor
@@ -180,6 +224,7 @@ public class CamManager {
 				double area = w * h2; // terület
 				if (area > maxArea) {
 					mMonitor = result.get(i);
+					mDir = dir;
 					maxArea = area;
 					mFound = true;
 				}
