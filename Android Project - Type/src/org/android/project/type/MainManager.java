@@ -10,10 +10,25 @@ import android.util.Log;
 
 public class MainManager {
 
+	// SETTINGS:
+	private int DIST_STEP = 5;
+	
+	// konstans adatok:
+	private double faultLimit = 100.;
+	private double monitorHeight = 19; // cm
+	private double monitorWidth = 34; // cm
+	private double monitorHeightPx = 694;
+	private double monitorWidthPx = 1254 - 36.6;
+	private double pxToCm = 36.6; // 1 cm ennyi pixel 50 cmrõl
+	
+	private double screenDist = 0;	// cm
+	private double screenW = 0;
+	private double screenH = 0;
+	
+	
 	private enum STATUS_ENUM {
-		SCAN_SQUARES, MONITOR_DETECT, ALIGN_CENTER, FACE_TO_FACE, CLOSE_TO, END, UPDATE_IMAGE
+		SCAN_SQUARES, MONITOR_DETECT, DISTANCE, ALIGN_CENTER, FACE_TO_FACE, CLOSE_TO, END, UPDATE_IMAGE
 	}
-
 	private STATUS_ENUM status = STATUS_ENUM.SCAN_SQUARES;
 
 	private CamManager mCam;
@@ -29,27 +44,37 @@ public class MainManager {
 		mDEBUG_TEXT = "Keres";
 	}
 
+	public void move(float x, float y, float z) {
+		mRobot.eMove(x, y);
+	}
+
+	public void rot(short _deg) {
+		mRobot.eRot(_deg);
+	}
+
 	public void update() {
 		switch (status) {
 		case SCAN_SQUARES:
-			Log.v("ford", "Negyszogek keresese");
-			if (mCam.scanSquares()) {
+			Log.v("ford", "Monitor keresese");
+			if (mCam.getMonitor()) {
 				spiralVar = 0;
-				status = STATUS_ENUM.MONITOR_DETECT;
-				update();
+				status = STATUS_ENUM.DISTANCE;
+				mDEBUG_TEXT = mRobot.moveTo(RobotManager.DIR_ENUM.FORWARD, DIST_STEP);
 			} else {
-				Log.v("ford", "Nincs negyszog, spiralban haladas");
+				Log.v("ford", "Nincs monitor, spiralban haladas");
 				goSpiral();
 			}
 			break;
-		case MONITOR_DETECT:
-			Log.v("ford", "Monitor kivalasztasa");
-			if (mCam.selectBestSquare()) {
+		case DISTANCE:
+			Log.v("ford", "Monitor meretenek es tavolsaganak kiszamolasa");
+			if (mCam.getDistances(DIST_STEP)) {
+				mDEBUG_TEXT = "Monitor becsult tavolsaga : " + Double.toString(mCam.mDist);
 				status = STATUS_ENUM.ALIGN_CENTER;
 				update();
-			} else {
-				mDEBUG_TEXT = "Nincs megfelelo negyszog";
-				Log.v("ford", mDEBUG_TEXT);
+			}
+			else
+			{
+				Log.v("ford", "Monitor eltunt");
 				status = STATUS_ENUM.SCAN_SQUARES;
 			}
 			break;
@@ -59,7 +84,7 @@ public class MainManager {
 				status = STATUS_ENUM.FACE_TO_FACE;
 				update();
 			} else {
-				status = STATUS_ENUM.UPDATE_IMAGE;
+				status = STATUS_ENUM.SCAN_SQUARES;
 			}
 			break;
 		case FACE_TO_FACE:
@@ -68,7 +93,7 @@ public class MainManager {
 				status = STATUS_ENUM.CLOSE_TO;
 				update();
 			} else {
-				status = STATUS_ENUM.UPDATE_IMAGE;
+				status = STATUS_ENUM.SCAN_SQUARES;
 			}
 			break;
 		case CLOSE_TO:
@@ -77,16 +102,16 @@ public class MainManager {
 				status = STATUS_ENUM.END;
 				mDEBUG_TEXT = "Kesz";
 			} else {
-				status = STATUS_ENUM.UPDATE_IMAGE;
+				status = STATUS_ENUM.SCAN_SQUARES;
 			}
 			break;
-		case UPDATE_IMAGE:
+		/*case UPDATE_IMAGE:
 			if (mCam.scanSquares())
 			{
 				status = STATUS_ENUM.MONITOR_DETECT;
 				update();
 			}
-			break;
+			break;*/
 		default:
 
 			break;
@@ -113,16 +138,12 @@ public class MainManager {
 		Core.putText(mCam.getDebugFrame(), mDEBUG_TEXT, new Point(0, 60), 1, 3,
 				new Scalar(255, 0, 0));
 
+		//Draw position
+		Core.putText(mCam.getDebugFrame(), Long.toString(mRobot.rot - mRobot.targetR ), new Point(0, height-60), 1, 3,
+				new Scalar(0, 255, 0));
+
 		return mCam.getDebugFrame();
 	}
-
-	// konstans adatok:
-	private double faultLimit = 100.;
-	private double monitorHeight = 19; // cm
-	private double monitorWidth = 34; // cm
-	private double monitorHeightPx = 694;
-	private double monitorWidthPx = 1254 - 36.6;
-	private double pxToCm = 36.6; // 1 cm ennyi pixel 50 cmrõl
 
 	public boolean centerBestSquare() {
 		mCam.mCenter.x = 0;
@@ -155,7 +176,7 @@ public class MainManager {
 		Log.v("ford", "Monitor-kamera tavolsag: " + Double.toString(tav));
 
 		if (Math.abs(distX) > faultLimit) {
-			mDEBUG_TEXT = mRobot.toMove(distX < 0 ? "jobbra" : "balra",
+			mDEBUG_TEXT = mRobot.moveTo(distX < 0 ? RobotManager.DIR_ENUM.RIGHT : RobotManager.DIR_ENUM.LEFT,
 					Math.abs(oldalra));
 		} else {
 			Log.v("ford", "A monitor a kep kozepen van");
@@ -196,18 +217,17 @@ public class MainManager {
 		Log.v("ford", "currentWidth: " + Double.toString(currentWidth));
 		Log.v("ford", "maxWidth: " + Double.toString(maxWidth));
 
-		double ford = Math.asin(currentWidth / maxWidth);
-		ford = ford * (360 / (2 * Math.PI));
+		int ford = (int)Math.round(Math.asin(currentWidth / maxWidth) * (360 / (2 * Math.PI)));
 		Log.v("ford", Double.toString(ford));
 		double oldal = Math.round(Math.tan(90 - ford) * tav);
 		ford = 90 - ford;
 
 		if (heightLeft < heightRight) {
-			mDEBUG_TEXT = mRobot.toMove("Jobbra: ", Math.abs(oldal));
+			mDEBUG_TEXT = mRobot.moveTo(RobotManager.DIR_ENUM.RIGHT, Math.abs(oldal));
 			mRobot.rot(ford);
 			mDEBUG_TEXT += " ,elfordulok " + Double.toString(ford);
 		} else {
-			mDEBUG_TEXT = mRobot.toMove("Balra: ", Math.abs(oldal));
+			mDEBUG_TEXT = mRobot.moveTo(RobotManager.DIR_ENUM.LEFT, Math.abs(oldal));
 			mRobot.rot(-ford);
 			mDEBUG_TEXT += " ,elfordulok " + Double.toString(-ford);
 		}

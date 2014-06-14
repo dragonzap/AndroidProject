@@ -1,50 +1,69 @@
 package org.android.project.type;
 
-import android.util.Log;
-
 /* 
  * A telefon mozgatasa
  */
 
 public class RobotManager {
-	public double posX = 0, posY = 0;
-	public float rot = 0;
+	public enum DIR_ENUM {
+		FORWARD, BACKWARD, RIGHT, LEFT
+	};
+	
+	public double posX = 0, posY = 0;	//cm
+	public int rot = 0;	// deg
 
-	public double targetX = 0, targetY = 0;
-	public double targetR = 0;
+	public double targetX = 0, targetY = 0;	//cm
+	public int targetR = 0;	//deg
 
-	public String toMove(String irany, double tav)
+	public String moveTo(DIR_ENUM direction, double distance)
 	{
-		if(irany == "jobbra")
+		String _t = "";
+		int _r = 0;
+		switch(direction)
 		{
-			rot(90.);
-			forward(tav);
-			rot(-90.);
+			case RIGHT:
+				_r = 90;
+				_t = "jobbra";
+			break;
+			case LEFT:
+				_r = -90;
+				_t = "balra";
+			break;
+			case FORWARD:
+				_t = "elore";
+			break;
+			case BACKWARD:
+				distance *= -1;
+				_t = "hatra";
+			break;
 		}
-		else if(irany == "balra")
-		{
-			rot(-90.);
-			forward(tav);
-			rot(90.);
-		}
-		else if(irany == "elore")
-		{
-			forward(tav);
-		}
-		else
-		{
-			forward(-tav);
-		}
-		return "mentem " + irany + "-ra " + Double.toString(tav) + "-cmt";
+
+		rot(_r);
+		forward(distance);
+		rot(-_r);
+
+		return "mentem " + _t + "-ra " + Double.toString(Math.abs(distance)) + "-cmt";
 	}
 	
-	public void forward(double tav)
+	public void forward(double _dist)
 	{
-		//TODO: elõre megy tavot
+		//TODO: elore megy _dist tavot
+		targetX += Math.cos(rot) * _dist;
+		targetY += Math.sin(rot) * _dist;
 	}
 
-	public void rot(double r)
+	public void rot(int _deg)
 	{
-		// TODO : robot forgatasa
+		// TODO : robot forgatasa r
+		targetR += _deg; 
+	}
+
+	public void eMove(double x, double y) {
+		posX = x;//Math.cos(rot) * x + Math.sin(rot) * y;
+		posY = y;//Math.sin(rot) * y + Math.cos(rot) * y;
+	}
+
+	public void eRot(short _deg) {
+		rot = _deg;
 	}
 }

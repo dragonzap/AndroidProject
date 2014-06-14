@@ -68,7 +68,7 @@ public class MainActivity extends Activity implements OnTouchListener,
 
 		senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 		senAccelerometer = senSensorManager
-				.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+				.getDefaultSensor(Sensor.TYPE_ORIENTATION);
 		senSensorManager.registerListener(this, senAccelerometer,
 				SensorManager.SENSOR_DELAY_NORMAL);
 	}
@@ -115,10 +115,6 @@ public class MainActivity extends Activity implements OnTouchListener,
 		return mMain.drawDebug(inputFrame);
 	}
 
-	private long lastUpdate = 0;
-	private float last_x, last_y, last_z;
-	private static final int SHAKE_THRESHOLD = 600;
-
 	private SensorManager senSensorManager;
 	private Sensor senAccelerometer;
 
@@ -126,30 +122,9 @@ public class MainActivity extends Activity implements OnTouchListener,
 	public void onSensorChanged(SensorEvent event) {
 		Sensor mySensor = event.sensor;
 
-		if (mySensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-			float x = event.values[0];
-			float y = event.values[1];
-			float z = event.values[2];
-
-			long curTime = System.currentTimeMillis();
-
-			if ((curTime - lastUpdate) > 100) {
-				long diffTime = (curTime - lastUpdate);
-				lastUpdate = curTime;
-
-				float speed = Math.abs(x + y + z - last_x - last_y - last_z)
-						/ diffTime * 10000;
-
-				if (speed > SHAKE_THRESHOLD) {
-					// Log.v("haha","jo");
-				}
-
-				last_x = x;
-				last_y = y;
-				last_z = z;
-			}
-
-		}
+		/*if (mMain != null && mySensor.getType() ==  Sensor.TYPE_ORIENTATION) {
+			mMain.rot((short)event.values[0]);
+		}*/
 	}
 
 	@Override

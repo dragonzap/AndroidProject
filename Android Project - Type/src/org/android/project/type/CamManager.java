@@ -18,13 +18,16 @@ import org.opencv.imgproc.Imgproc;
 public class CamManager {
 
 	// SETTINGS:
-	static int thresh = 50;
-	static int thresh_levels = 1;
-	static int min_square_size = 1000;
-	static double aspect_thres = 0.2f;
+	static byte THRESH = 50;
+	static byte THRESH_LEVEL = 1;
+	static short MIN_SQUARE_SIZE = 1000;
+	static float ASPECT_THRESH = 0.2f;
 
 	public boolean mFound = false;
 	public Point[] mMonitor = new Point[4];
+	public double mWidth = 0;
+	public double mHeight = 0;
+	public double mDist = 0;
 	public Point mCenter, scrCenter;
 
 	private List<Point[]> result = new ArrayList<Point[]>();
@@ -69,6 +72,85 @@ public class CamManager {
 		}
 	}
 
+	public boolean getMonitor()
+	{
+		if (scanSquares() && selectBestSquare())
+		{
+			mWidth  = (getDistance(mMonitor[0], mMonitor[1]) + getDistance(mMonitor[2], mMonitor[3])) / 2.f;
+			mHeight = (getDistance(mMonitor[0], mMonitor[3]) + getDistance(mMonitor[1], mMonitor[2])) / 2.f;
+		}
+		return mFound;
+	}
+
+	public boolean getDistances(int _dist_step) {
+		if (scanSquares() && selectBestSquare())
+		{
+			double aWidth = (getDistance(mMonitor[0], mMonitor[1]) + getDistance(mMonitor[2], mMonitor[3])) / 2.f;
+			double aHeight = (getDistance(mMonitor[0], mMonitor[3]) + getDistance(mMonitor[1], mMonitor[2])) / 2.f;
+			mDist = _dist_step * mWidth / (aWidth - mWidth);
+			mDist += _dist_step * mHeight / (aHeight - mHeight);
+			mDist /= 2.f;
+			return true;
+		}
+		return false;
+	}
+
+	public double getDistance(Point a, Point b) {
+		return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
+	}
+
+	private boolean scanSquares() {
+		if (mImage.empty())
+			return false;
+
+		result.clear();
+
+		// zajtalanitas
+		Imgproc.pyrDown(mImage, timg, new Size(mImage.cols() / 2.0, mImage.rows() / 2));
+		Imgproc.pyrUp(timg, timg, mImage.size());
+
+		List<Mat> timgL = new ArrayList<Mat>(), grayL = new ArrayList<Mat>();
+		timgL.add(timg);
+		grayL.add(new Mat(mImage.size(), CvType.CV_8U));
+
+		for (int c = 0; c < 3; c++) {
+			int ch[] = { 1, 0 };
+			MatOfInt fromto = new MatOfInt(ch);
+			Core.mixChannels(timgL, grayL, fromto);
+
+			// kulombozo kuszobszintek
+			for (int l = 0; l < THRESH_LEVEL; l++) {
+				Mat output = grayL.get(0);
+				if (l == 0)
+				{
+					Imgproc.Canny(output, gray, THRESH, 5);
+					Imgproc.dilate(gray, gray, new Mat(), new Point(-1, -1), 1);
+				} else {
+					Imgproc.threshold(output, gray, (l + 1) * 255 / THRESH_LEVEL, 255, Imgproc.THRESH_BINARY);
+				}
+
+				// korvonal lista
+				List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+				Imgproc.findContours(gray, contours, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+				MatOfPoint2f approx = new MatOfPoint2f();
+
+				// konturok ellenorzese
+				for (int i = 0; i < contours.size(); i++) {
+					MatOfPoint2f newMat = new MatOfPoint2f(contours.get(i).toArray());
+					Imgproc.approxPolyDP(newMat, approx, Imgproc.arcLength(newMat, true) * 0.02f, true);
+					MatOfPoint points = new MatOfPoint(approx.toArray());
+
+					// hasznos negyszogek kivalogatasa
+					if (points.toArray().length == 4 && Math.abs(Imgproc.contourArea(approx)) > MIN_SQUARE_SIZE && Imgproc.isContourConvex(points)) {
+						result.add(sortPoints(points));
+					}
+				}
+			}
+		}
+		timg.release();
+		return result.size() != 0;
+	}
+
 	public boolean selectBestSquare() {
 		mFound = false;
 		double maxArea = 10;
@@ -92,8 +174,8 @@ public class CamManager {
 
 			double asp = w / h2; // keparany
 
-			if (Math.abs(asp - 16.f / 9.f) < aspect_thres
-					|| Math.abs(asp - 4.f / 3.f) < aspect_thres) // jo keparany
+			if (Math.abs(asp - 16.f / 9.f) < ASPECT_THRESH
+					|| Math.abs(asp - 4.f / 3.f) < ASPECT_THRESH) // jo keparany
 			{
 				double area = w * h2; // terület
 				if (area > maxArea) {
@@ -112,61 +194,6 @@ public class CamManager {
 		return mFound;
 	}
 
-	public double getDistance(Point a, Point b) {
-		return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
-	}
-
-	public boolean scanSquares() {
-		if (mImage.empty())
-			return false;
-
-		result.clear();
-
-		// zajtalanitas
-		Imgproc.pyrDown(mImage, timg, new Size(mImage.cols() / 2.0, mImage.rows() / 2));
-		Imgproc.pyrUp(timg, timg, mImage.size());
-
-		List<Mat> timgL = new ArrayList<Mat>(), grayL = new ArrayList<Mat>();
-		timgL.add(timg);
-		grayL.add(new Mat(mImage.size(), CvType.CV_8U));
-
-		for (int c = 0; c < 3; c++) {
-			int ch[] = { 1, 0 };
-			MatOfInt fromto = new MatOfInt(ch);
-			Core.mixChannels(timgL, grayL, fromto);
-
-			// kulombozo kuszobszintek
-			for (int l = 0; l < thresh_levels; l++) {
-				Mat output = grayL.get(0);
-				if (l == 0)
-				{
-					Imgproc.Canny(output, gray, thresh, 5);
-					Imgproc.dilate(gray, gray, new Mat(), new Point(-1, -1), 1);
-				} else {
-					Imgproc.threshold(output, gray, (l + 1) * 255 / thresh_levels, 255, Imgproc.THRESH_BINARY);
-				}
-
-				// korvonal lista
-				List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-				Imgproc.findContours(gray, contours, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
-				MatOfPoint2f approx = new MatOfPoint2f();
-
-				// konturok ellenorzese
-				for (int i = 0; i < contours.size(); i++) {
-					MatOfPoint2f newMat = new MatOfPoint2f(contours.get(i).toArray());
-					Imgproc.approxPolyDP(newMat, approx, Imgproc.arcLength(newMat, true) * 0.02f, true);
-					MatOfPoint points = new MatOfPoint(approx.toArray());
-
-					// hasznos negyszogek kivalogatasa
-					if (points.toArray().length == 4 && Math.abs(Imgproc.contourArea(approx)) > min_square_size && Imgproc.isContourConvex(points)) {
-						result.add(sortPoints(points));
-					}
-				}
-			}
-		}
-		timg.release();
-		return result.size() != 0;
-	}
 
 	/*
 	 * 0------------1 Sorba rendezi a pontokat 
