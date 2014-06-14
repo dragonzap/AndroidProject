@@ -20,12 +20,7 @@ public class MainManager {
 	private double monitorHeightPx = 694;
 	private double monitorWidthPx = 1254 - 36.6;
 	private double pxToCm = 36.6; // 1 cm ennyi pixel 50 cmrõl
-	
-	private double screenDist = 0;	// cm
-	private double screenW = 0;
-	private double screenH = 0;
-	
-	
+
 	private enum STATUS_ENUM {
 		SCAN_SQUARES, MONITOR_DETECT, DISTANCE, ALIGN_CENTER, FACE_TO_FACE, CLOSE_TO, END, UPDATE_IMAGE
 	}
@@ -76,15 +71,16 @@ public class MainManager {
 			{
 				Log.v("ford", "Monitor eltunt");
 				status = STATUS_ENUM.SCAN_SQUARES;
+				mDEBUG_TEXT = "Monitor eltunt";
 			}
 			break;
 		case ALIGN_CENTER:
 			Log.v("ford", "Kozepre navigalas");
-			if (centerBestSquare()) {
+			if (alignCenter()) {
 				status = STATUS_ENUM.FACE_TO_FACE;
 				update();
 			} else {
-				status = STATUS_ENUM.SCAN_SQUARES;
+				status = STATUS_ENUM.UPDATE_IMAGE;
 			}
 			break;
 		case FACE_TO_FACE:
@@ -93,7 +89,7 @@ public class MainManager {
 				status = STATUS_ENUM.CLOSE_TO;
 				update();
 			} else {
-				status = STATUS_ENUM.SCAN_SQUARES;
+				status = STATUS_ENUM.UPDATE_IMAGE;
 			}
 			break;
 		case CLOSE_TO:
@@ -102,16 +98,16 @@ public class MainManager {
 				status = STATUS_ENUM.END;
 				mDEBUG_TEXT = "Kesz";
 			} else {
-				status = STATUS_ENUM.SCAN_SQUARES;
+				status = STATUS_ENUM.UPDATE_IMAGE;
 			}
 			break;
-		/*case UPDATE_IMAGE:
-			if (mCam.scanSquares())
+		case UPDATE_IMAGE:
+			if (mCam.getMonitor())
 			{
-				status = STATUS_ENUM.MONITOR_DETECT;
+				status = STATUS_ENUM.ALIGN_CENTER;
 				update();
 			}
-			break;*/
+			break;
 		default:
 
 			break;
@@ -139,24 +135,17 @@ public class MainManager {
 				new Scalar(255, 0, 0));
 
 		//Draw position
-		Core.putText(mCam.getDebugFrame(), Long.toString(mRobot.rot - mRobot.targetR ), new Point(0, height-60), 1, 3,
+		Core.putText(mCam.getDebugFrame(), "Dist: " + Double.toString(mCam.mDist) + "cm Dir: " + Double.toString(90 - mCam.mDir * 57.2957795d) + "deg", new Point(0, height-60), 1, 2,
+				new Scalar(0, 255, 0));
+		
+		Core.putText(mCam.getDebugFrame(), "h1: " + Double.toString(Math.round(mCam.pHeight1)) + " h2: " + Double.toString(Math.round(mCam.pHeight2)) + " size:" + Double.toString(Math.round(mCam.mSize)) + "col", new Point(0, height-30), 1, 2,
 				new Scalar(0, 255, 0));
 
 		return mCam.getDebugFrame();
 	}
 
-	public boolean centerBestSquare() {
-		mCam.mCenter.x = 0;
-		mCam.mCenter.y = 0;
-		for (int p = 0; p < 4; p++) {
-			mCam.mCenter.x += mCam.mMonitor[p].x;
-			mCam.mCenter.y += mCam.mMonitor[p].y;
-		}
-		mCam.mCenter.x /= 4;
-		mCam.mCenter.y /= 4;
-
-		double distX = mCam.scrCenter.x - mCam.mCenter.x; // a képernyõ közepe a
-															// monitor közepétõl
+	public boolean alignCenter() {
+		double distX = mCam.scrCenter.x - mCam.mCenter.x; // a képernyõ közepe a monitor közepétõl
 		// double distY = mCam.scrCenter.y - mCam.mCenter.y;
 		double heightLeft = mCam
 				.getDistance(mCam.mMonitor[0], mCam.mMonitor[3]); // a monitor

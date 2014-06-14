@@ -32,7 +32,7 @@ public class CamManager {
 	public double mWidth = 0;	// px
 	public double mHeight = 0;	// px
 	public double mDist = 0;	// cm
-	public double mSize = 0;	// cm width
+	public double mSize = 0;	// col
 	public double mDir = 0;		// radian
 	public Point mCenter, scrCenter;
 
@@ -114,25 +114,32 @@ public class CamManager {
 			}
 			mCenter.x /= 4;
 			mCenter.y /= 4;
-			
-			double aWidth = (getDistance(mMonitor[0], mMonitor[1]) + getDistance(mMonitor[2], mMonitor[3])) / 2.f;
+
+			/* Kamera tavolsaganak kiszamolasa a regi es az uj kep segitsegevel
+			 * Megnezi hogy a vizsgalt targy DIST_STEP meretu kozelitesre mennyivel no meg.
+			 */
 			double aHeight1 = getDistance(mMonitor[0], mMonitor[3]);
 			double aHeight2 = getDistance(mMonitor[1], mMonitor[2]);
-			
-			mDist = _dist_step * mWidth / (aWidth - mWidth);
-			mDist += _dist_step * mHeight / ((aHeight1 + aHeight2)/2 - mHeight);
-			mDist /= 2.f;
-			
+			mDist = _dist_step * mHeight / ((aHeight1 + aHeight2)/2 - mHeight);
+
+			// Megnezi kulon mind ket oldalt is
 			pHeight1 = _dist_step * pHeight1 / (aHeight1 - pHeight1);
 			pHeight2 = _dist_step * pHeight2 / (aHeight2 - pHeight2);
-			
-			double d = Math.abs(mMonitor[0].x + mMonitor[3].x - mMonitor[1].x - mMonitor[2].x) / 2.f;
-			mSize = (d / CAM_HEIGHT) * mDist * CAM_H_FOV; 
 
-			mDir = Math.atan((pHeight1 - pHeight2) / mSize);
-			
-			mWidth = aWidth;
+			// Milyen szelesnek latszik a kepernyo
+			double proj_height = Math.abs(mMonitor[0].x + mMonitor[3].x - mMonitor[1].x - mMonitor[2].x) / 2.f;
+
+			// Kiszamolja hogy a kamera sikjara levetitve hany centi szeles a kepernyo
+			mWidth = (proj_height / CAM_WIDTH) * mDist * CAM_H_FOV;
+
+			// Kiszamolja a szoget a ket oldal tavolsaganak a kulombsege / vetitett szelesseg
+			mDir = Math.atan((pHeight1 - pHeight2) / mWidth);
+
+			// Monitor valodi meretei
+			mWidth = Math.sqrt( Math.pow(mWidth, 2) + Math.pow(pHeight1 - pHeight2, 2));
 			mHeight = (aHeight1 + aHeight2)/2;
+			mHeight = (mHeight / CAM_HEIGHT) * mDist * CAM_V_FOV;
+			mSize = Math.sqrt(Math.pow(mWidth, 2) + Math.pow(mHeight,2)) / 2.54d;	// atvaltas colba
 			return true;
 		}
 		return false;

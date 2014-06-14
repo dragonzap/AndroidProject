@@ -24,7 +24,7 @@ import android.view.WindowManager;
 import android.view.View.OnTouchListener;
 
 public class MainActivity extends Activity implements OnTouchListener,
-		CvCameraViewListener2, SensorEventListener {
+		CvCameraViewListener2 {
 	private static final String TAG = "OCVSample::Activity";
 
 	private MainManager mMain;
@@ -65,12 +65,6 @@ public class MainActivity extends Activity implements OnTouchListener,
 
 		mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.color_blob_detection_activity_surface_view);
 		mOpenCvCameraView.setCvCameraViewListener(this);
-
-		senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-		senAccelerometer = senSensorManager
-				.getDefaultSensor(Sensor.TYPE_ORIENTATION);
-		senSensorManager.registerListener(this, senAccelerometer,
-				SensorManager.SENSOR_DELAY_NORMAL);
 	}
 
 	@Override
@@ -78,8 +72,6 @@ public class MainActivity extends Activity implements OnTouchListener,
 		super.onPause();
 		if (mOpenCvCameraView != null)
 			mOpenCvCameraView.disableView();
-
-		senSensorManager.unregisterListener(this);
 	}
 
 	@Override
@@ -87,9 +79,6 @@ public class MainActivity extends Activity implements OnTouchListener,
 		super.onResume();
 		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_8, this,
 				mLoaderCallback);
-
-		senSensorManager.registerListener(this, senAccelerometer,
-				SensorManager.SENSOR_DELAY_NORMAL);
 	}
 
 	public void onDestroy() {
@@ -113,22 +102,5 @@ public class MainActivity extends Activity implements OnTouchListener,
 
 	public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
 		return mMain.drawDebug(inputFrame);
-	}
-
-	private SensorManager senSensorManager;
-	private Sensor senAccelerometer;
-
-	@Override
-	public void onSensorChanged(SensorEvent event) {
-		Sensor mySensor = event.sensor;
-
-		/*if (mMain != null && mySensor.getType() ==  Sensor.TYPE_ORIENTATION) {
-			mMain.rot((short)event.values[0]);
-		}*/
-	}
-
-	@Override
-	public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
 	}
 }
