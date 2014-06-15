@@ -7,7 +7,7 @@ package org.android.project.type;
 public class RobotManager {
 	public enum DIR_ENUM {
 		FORWARD, BACKWARD, RIGHT, LEFT
-	};
+	}
 	
 	public double posX = 0, posY = 0;	//cm
 	public int rot = 0;	// deg
@@ -56,14 +56,5 @@ public class RobotManager {
 	{
 		// TODO : robot forgatasa r
 		targetR += _deg; 
-	}
-
-	public void eMove(double x, double y) {
-		posX = x;//Math.cos(rot) * x + Math.sin(rot) * y;
-		posY = y;//Math.sin(rot) * y + Math.cos(rot) * y;
-	}
-
-	public void eRot(short _deg) {
-		rot = _deg;
 	}
 }

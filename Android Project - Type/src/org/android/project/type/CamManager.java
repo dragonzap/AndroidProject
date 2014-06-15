@@ -89,10 +89,10 @@ public class CamManager {
 	}
 
 	public void drawSquares() {
-		for (int s = 0; s < result.size(); s++) {
+		for (Point[] s : result) {
 			for (int i = 0; i < 4; i++) {
-				Core.line(mOutImg, result.get(s)[i],
-						result.get(s)[(i + 1) % 4], new Scalar(0, 255, 255));
+				Core.line(mOutImg, s[i],
+						s[(i + 1) % 4], new Scalar(0, 255, 255));
 			}
 		}
 	}
@@ -140,11 +140,8 @@ public class CamManager {
 	public boolean getDistances(int _dist_step) {
 		if (scanSquares() && selectBestSquare())
 		{
-
-
 			/* Kamera tavolsaganak kiszamolasa a regi es az uj kep segitsegevel
-			 * Megnezi hogy a vizsgalt targy DIST_STEP meretu kozelitesre mennyivel no meg.
-			 */
+                 Megnezi hogy a vizsgalt targy DIST_STEP meretu kozelitesre mennyivel no meg. */
 			double aHeight1 = getDistance(mMonitor[0], mMonitor[3]);
 			double aHeight2 = getDistance(mMonitor[1], mMonitor[2]);
 			mDistF = _dist_step * mHeight / ((aHeight1 + aHeight2)/2 - mHeight);
@@ -154,7 +151,7 @@ public class CamManager {
 			pHeight1 = _dist_step * pHeight1 / (aHeight1 - pHeight1);
 			pHeight2 = _dist_step * pHeight2 / (aHeight2 - pHeight2);
 
-            //
+            // Atlagolas
             mDistF = (pHeight1 + pHeight2 + mDistF) / 3;
 
 			// Milyen szelesnek latszik a kepernyo
@@ -168,6 +165,12 @@ public class CamManager {
 
 			// Monitor valodi meretei
 			mWidth = Math.sqrt( Math.pow(mWidth, 2) + Math.pow(pHeight1 - pHeight2, 2));
+            mDir = Math.asin((pHeight1 - pHeight2) / mWidth);
+
+            mDir = ((180/Math.PI) *mDir) % 360;
+            mDir = (90 - Math.abs(mDir)) * Math.signum(mDir);
+            mDir = (Math.PI/180)*mDir;
+
 			mHeight = (aHeight1 + aHeight2)/2;
 			mHeight = (mHeight / CAM_HEIGHT) * mDistF * CAM_V_FOV;
 			mSize = Math.sqrt(Math.pow(mWidth, 2) + Math.pow(mHeight,2)) / 2.54d;	// atvaltas colba
@@ -216,8 +219,8 @@ public class CamManager {
 				MatOfPoint2f approx = new MatOfPoint2f();
 
 				// konturok ellenorzese
-				for (int i = 0; i < contours.size(); i++) {
-					MatOfPoint2f newMat = new MatOfPoint2f(contours.get(i).toArray());
+				for (MatOfPoint i : contours) {
+					MatOfPoint2f newMat = new MatOfPoint2f(i.toArray());
 					Imgproc.approxPolyDP(newMat, approx, Imgproc.arcLength(newMat, true) * 0.02f, true);
 					MatOfPoint points = new MatOfPoint(approx.toArray());
 
@@ -235,16 +238,16 @@ public class CamManager {
 	public boolean selectBestSquare() {
 		mFound = false;
 		double maxArea = 10;
-		for (int i = 0; i < result.size(); i++) {
+		for (Point[] i : result) {
 			/* double widthTop = getDistance(result.get(i)[0], result.get(i)[1]);
 			double widthBottom = getDistance(result.get(i)[2], result.get(i)[3]); */
-			double heightLeft = getDistance(result.get(i)[0], result.get(i)[3]);
-			double heightRight = getDistance(result.get(i)[1], result.get(i)[2]);
+			double heightLeft = getDistance(i[0], i[3]);
+			double heightRight = getDistance(i[1], i[2]);
 
 			// Kepernyo arany kiszamitasa
 			double h1 = Math.min(heightLeft, heightRight); // kissebb oldal
 			double h2 = Math.max(heightLeft, heightRight); // nagyobb oldal
-			double d = Math.abs(result.get(i)[0].x + result.get(i)[3].x - result.get(i)[1].x - result.get(i)[2].x) / 2.f; // ket oldal kozott latott tavolsag
+			double d = Math.abs(i[0].x + i[3].x - i[1].x - i[2].x) / 2.f; // ket oldal kozott latott tavolsag
 			double dir = Math.asin((h2 - h1) / h2);
 			double t = Math.tan(dir) * d; // ket oldal kozti melysegi tavolsag
 
@@ -252,7 +255,7 @@ public class CamManager {
 			if (h2 != h1) // ha nem egyenlok akkor
 				w = Math.sqrt(d * d + t * t);
 			else
-				w = getDistance(result.get(i)[0], result.get(i)[1]);
+				w = getDistance(i[0], i[1]);
 
 			double asp = w / h2; // keparany
 
@@ -261,8 +264,8 @@ public class CamManager {
 			{
 				double area = w * h2; // terület
 				if (area > maxArea) {
-					mMonitor = result.get(i);
-					mDir = dir;
+					mMonitor = i;
+					mDir = dir; // TODO: torolni kell mert elrontja a szamitas
 					maxArea = area;
 					mFound = true;
 				}

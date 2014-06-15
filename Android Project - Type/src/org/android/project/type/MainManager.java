@@ -120,7 +120,7 @@ public class MainManager {
                 new Scalar(255, 0, 0));
 
         //Draw position
-        Core.putText(mCam.getDebugFrame(), "Dist: " + Double.toString(mCam.mDistF) + "cm Dir: " + Double.toString(90 - mCam.mDir * 57.2957795d) + "deg", new Point(0, height - 60), 1, 2,
+        Core.putText(mCam.getDebugFrame(), "Dist: " + Double.toString(mCam.mDistF) + "cm Dir: " + Double.toString(mCam.mDir * 57.2957795d) + "deg", new Point(0, height - 60), 1, 2,
                 new Scalar(0, 255, 0));
 
         Core.putText(mCam.getDebugFrame(), "h1: " + Double.toString(Math.round(mCam.mWidth)) + " h2: " + Double.toString(Math.round(mCam.mHeight)) + " size:" + Double.toString(Math.round(mCam.mSize)) + "col", new Point(0, height - 30), 1, 2,
