@@ -42,7 +42,7 @@ public class RobotManager {
 		forward(distance);
 		rot(-_r);
 
-		return "mentem " + _t + "-ra " + Double.toString(Math.abs(distance)) + "-cmt";
+		return "mentem " + _t + " " + Double.toString(Math.abs(distance)) + "-cmt";
 	}
 	
 	public void forward(double _dist)

@@ -118,6 +118,11 @@ public class CamManager {
 		return mFound;
 	}
 
+    public float getMonitorXDistance()
+    {
+        return 0;
+    }
+
 	public boolean getDistances(int _dist_step) {
 		if (scanSquares() && selectBestSquare())
 		{
@@ -142,6 +147,9 @@ public class CamManager {
 			// Megnezi kulon mind ket oldalt is
 			pHeight1 = _dist_step * pHeight1 / (aHeight1 - pHeight1);
 			pHeight2 = _dist_step * pHeight2 / (aHeight2 - pHeight2);
+
+            //
+            mDistF = (pHeight1 + pHeight2 + mDistF) / 3;
 
 			// Milyen szelesnek latszik a kepernyo
 			double proj_height = Math.abs(mMonitor[0].x + mMonitor[3].x - mMonitor[1].x - mMonitor[2].x) / 2.f;
