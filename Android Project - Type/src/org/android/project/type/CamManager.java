@@ -132,7 +132,7 @@ public class CamManager {
             mCenter.x /= 4;
             mCenter.y /= 4;
 
-            _dist = (CAM_WIDTH / 2.d)  / mCenter.x;
+            _dist = (CAM_WIDTH / 2.d) - mCenter.x;
         }
         return _dist;
     }
@@ -144,12 +144,19 @@ public class CamManager {
                  Megnezi hogy a vizsgalt targy DIST_STEP meretu kozelitesre mennyivel no meg. */
 			double aHeight1 = getDistance(mMonitor[0], mMonitor[3]);
 			double aHeight2 = getDistance(mMonitor[1], mMonitor[2]);
+
+            Log.v("ford", "Monitor bal szele: " + Double.toString(pHeight1));
+            Log.v("ford", "Monitor jobb szele: " + Double.toString(pHeight2));
+
 			mDistF = _dist_step * mHeight / ((aHeight1 + aHeight2)/2 - mHeight);
             mDistS = ((scrCenter.x - mCenter.x) / CAM_WIDTH) * mDistF * CAM_H_FOV;
 
 			// Megnezi kulon mind ket oldalt is
 			pHeight1 = _dist_step * pHeight1 / (aHeight1 - pHeight1);
 			pHeight2 = _dist_step * pHeight2 / (aHeight2 - pHeight2);
+
+            Log.v("ford", "Monitor bal szele: " + Double.toString(pHeight1));
+            Log.v("ford", "Monitor jobb szele: " + Double.toString(pHeight2));
 
             // Atlagolas
             mDistF = (pHeight1 + pHeight2 + mDistF) / 3;
@@ -167,9 +174,12 @@ public class CamManager {
 			mWidth = Math.sqrt( Math.pow(mWidth, 2) + Math.pow(pHeight1 - pHeight2, 2));
             mDir = Math.asin((pHeight1 - pHeight2) / mWidth);
 
-            mDir = ((180/Math.PI) *mDir) % 360;
-            mDir = (90 - Math.abs(mDir)) * Math.signum(mDir);
-            mDir = (Math.PI/180)*mDir;
+            Log.v("ford", "a: " + Double.toString(pHeight1 - pHeight2));
+            Log.v("ford", "c: " + Double.toString(mWidth));
+            //mDir /= 2;
+          /*  mDir = Math.toDegrees(mDir);
+            mDir = Math.PI/4 - Math.abs(mDir);
+            mDir = Math.toRadians(mDir);*/
 
 			mHeight = (aHeight1 + aHeight2)/2;
 			mHeight = (mHeight / CAM_HEIGHT) * mDistF * CAM_V_FOV;
@@ -271,12 +281,12 @@ public class CamManager {
 				}
 			}
 		}
-		if (mFound) {
+		/*if (mFound) {
 			Log.v("ford", "Negyszog felso szele: " + Double.toString(getDistance(mMonitor[0], mMonitor[1])));
 			Log.v("ford", "Negyszog jobb szele: " + Double.toString(getDistance(mMonitor[1], mMonitor[2])));
 			Log.v("ford", "Negyszog also szele: " + Double.toString(getDistance(mMonitor[2], mMonitor[3])));
 			Log.v("ford", "Negyszog bal szele: " + Double.toString(getDistance(mMonitor[3], mMonitor[0])));
-		}
+		}*/
 		return mFound;
 	}
 

@@ -77,7 +77,7 @@ public class MainActivity extends Activity implements OnTouchListener,
 	@Override
 	public void onResume() {
 		super.onResume();
-		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_8, this,
+		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this,
 				mLoaderCallback);
 	}
 
