@@ -38,11 +38,9 @@ public class MainManager {
     public void update() {
         switch (status) {
             case SCAN_SQUARES:
-                Log.v("ford", "Monitor keresese");
                 if (mCam.getMonitor()) {
                     spiralVar = 0;
                     status = STATUS_ENUM.ALIGN_CENTER;
-                    mDEBUG_TEXT = mRobot.moveTo(RobotManager.DIR_ENUM.FORWARD, DIST_STEP);
                 } else {
                     Log.v("ford", "Nincs monitor, spiralban haladas");
                     goSpiral();
@@ -130,28 +128,22 @@ public class MainManager {
     }
 
     public boolean alignCenter() {
-        double distX = mCam.scrCenter.x - mCam.mCenter.x; // a képernyõ közepe a monitor közepétõl
-        // double distY = mCam.scrCenter.y - mCam.mCenter.y;
-        /*double heightLeft = mCam.getDistance(mCam.mMonitor[0], mCam.mMonitor[3]); // a monitor
-																	// bal
-																	// oldalának
-																	// magassága
-		double heightRight = mCam.getDistance(mCam.mMonitor[1],
-				mCam.mMonitor[2]); // a monitor jobb oldalának magassága
+        double distX = mCam.getMonitorXDistance();
 
-		double mainSide = (heightLeft + heightRight) / 2;
-		double tav;
-		tav = (50 * mainSide) / monitorHeightPx; // monitor-kamera távolság
-		double pxToCmVar;
-		pxToCmVar = (pxToCm * tav) / 50;
-		double oldalra;
-		oldalra = Math.round(distX / pxToCmVar); // egy cm-et kell oldalra menni
-		Log.v("ford", "Monitor-kamera tavolsag: " + Double.toString(tav));*/
-
+        int rotVar = 5;
         if (Math.abs(distX) > faultLimit) {
             // TODO: Robot forgatas
-                /*mDEBUG_TEXT = "Elfordulok " + Double.toString(Math.round(_dir)) + " fokot";
-             mRobot.rot(_dir);*/
+                mDEBUG_TEXT = "Elfordulok " + Integer.toString(rotVar) + " fokot";
+                Log.v("ford", "Elfordulok " + Integer.toString(rotVar) + " fokot");
+                if(distX > 0)
+                {
+                	mRobot.rot(rotVar);
+                }
+                else
+                {
+                	mRobot.rot(0-rotVar);
+                }
+                
         } else {
             Log.v("ford", "A monitor a kep kozepen van");
             return true;
