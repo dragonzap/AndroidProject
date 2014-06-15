@@ -39,8 +39,8 @@ public class CamManager {
 	private List<Point[]> result = new ArrayList<Point[]>();
 	private Mat mImage, mOutImg;
 	
-	public double pHeight1 = 0;
-	public double pHeight2 = 0;
+	private double pHeight1 = 0;
+	private double pHeight2 = 0;
 
 	// Cache
 	Mat gray, timg;
