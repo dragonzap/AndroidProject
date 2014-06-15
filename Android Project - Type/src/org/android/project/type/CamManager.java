@@ -31,7 +31,8 @@ public class CamManager {
 	public Point[] mMonitor = new Point[4];
 	public double mWidth = 0;	// px
 	public double mHeight = 0;	// px
-	public double mDist = 0;	// cm
+	public double mDistF = 0;	// cm elorefele
+    public double mDistS = 0;	// cm oldalra
 	public double mSize = 0;	// col
 	public double mDir = 0;		// radian
 	public Point mCenter, scrCenter;
@@ -44,7 +45,7 @@ public class CamManager {
     |                \ | mDistS
     |                 \|
     |------------------* - monitor
-    |      mDist       \
+    |      mDistF       \
     |                    \
 
      */
@@ -147,7 +148,8 @@ public class CamManager {
             Log.v("ford", "Monitor bal szele: " + Double.toString(pHeight1));
             Log.v("ford", "Monitor jobb szele: " + Double.toString(pHeight2));
 
-			mDist = _dist_step * mHeight / ((aHeight1 + aHeight2)/2 - mHeight);
+			mDistF = _dist_step * mHeight / ((aHeight1 + aHeight2)/2 - mHeight);
+            mDistS = ((scrCenter.x - mCenter.x) / CAM_WIDTH) * mDistF * CAM_H_FOV;
 
 			// Megnezi kulon mind ket oldalt is
 			pHeight1 = _dist_step * pHeight1 / (aHeight1 - pHeight1);
@@ -157,23 +159,20 @@ public class CamManager {
             Log.v("ford", "Monitor jobb szele: " + Double.toString(pHeight2));
 
             // Atlagolas
-            mDistF = (pHeight1 + pHeight2 + mDist) / 3;
+            mDistF = (pHeight1 + pHeight2 + mDistF) / 3;
 
 			// Milyen szelesnek latszik a kepernyo
 			double proj_height = Math.abs(mMonitor[0].x + mMonitor[3].x - mMonitor[1].x - mMonitor[2].x) / 2.f;
 
 			// Kiszamolja hogy a kamera sikjara levetitve hany centi szeles a kepernyo
-			mWidth = (proj_height / CAM_WIDTH) * mDist * CAM_H_FOV;
+			mWidth = (proj_height / CAM_WIDTH) * mDistF * CAM_H_FOV;
 
 			// Kiszamolja a szoget a ket oldal tavolsaganak a kulombsege / vetitett szelesseg
-            mDir = Math.asin((aHeight1 - aHeight2) / aHeight2);
-
-			mDir += Math.atan((pHeight1 - pHeight2) / mWidth);
+			mDir = Math.atan((pHeight1 - pHeight2) / mWidth);
 
 			// Monitor valodi meretei
 			mWidth = Math.sqrt( Math.pow(mWidth, 2) + Math.pow(pHeight1 - pHeight2, 2));
-            mDir += Math.asin((pHeight1 - pHeight2) / mWidth);
-            mDir /=3;
+            mDir = Math.asin((pHeight1 - pHeight2) / mWidth);
 
             Log.v("ford", "a: " + Double.toString(pHeight1 - pHeight2));
             Log.v("ford", "c: " + Double.toString(mWidth));
@@ -183,7 +182,7 @@ public class CamManager {
             mDir = Math.toRadians(mDir);*/
 
 			mHeight = (aHeight1 + aHeight2)/2;
-			mHeight = (mHeight / CAM_HEIGHT) * mDist * CAM_V_FOV;
+			mHeight = (mHeight / CAM_HEIGHT) * mDistF * CAM_V_FOV;
 			mSize = Math.sqrt(Math.pow(mWidth, 2) + Math.pow(mHeight,2)) / 2.54d;	// atvaltas colba
 			return true;
 		}
