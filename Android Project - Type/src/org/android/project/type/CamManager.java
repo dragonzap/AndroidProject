@@ -27,7 +27,7 @@ public class CamManager {
     static int CAM_WIDTH = 1280;
     static int CAM_HEIGHT = 800;
     static double CAM_H_FOV = 0.58318276339d;    // tg( 60.5° / 2 )
-    static double CAM_V_FOV = 0.44732161718d;        // tg( 48.2° / 2 )
+    //static double CAM_V_FOV = 0.44732161718d;        // tg( 48.2° / 2 )
 
     public boolean mFound = false;
     public Point[] mMonitor = new Point[4];
@@ -36,26 +36,13 @@ public class CamManager {
     public double mDist = 0;    // cm
     public double mSize = 0;    // col
     public double mDir = 0;        // radian
-    public Point mCenter, scrCenter;
-
-    /*
-    |
-    | camera
-    |/
-    *------------------|
-    |                \ | mDistS
-    |                 \|
-    |------------------* - monitor
-    |      mDist       \
-    |                    \
-
-     */
+    public Point mCenter;
 
     private List<Point[]> result = new ArrayList<Point[]>();
     private Mat mImage, mOutImg;
-
-    public double pHeight1 = 0;
-    public double pHeight2 = 0;
+    private double oldHeight1 = 0;
+    private double oldHeight2 = 0;
+    private int last_dist_step = 0;
 
     // Cache
     Mat gray, timg;
@@ -64,9 +51,6 @@ public class CamManager {
         CAM_WIDTH = _w;
         CAM_HEIGHT = _h;
         mCenter = new Point();
-        scrCenter = new Point();
-        scrCenter.x = CAM_WIDTH / 2;
-        scrCenter.y = CAM_HEIGHT / 2;
         mImage = new Mat(CAM_WIDTH, CAM_HEIGHT, 0);
         mOutImg = new Mat(CAM_WIDTH, CAM_HEIGHT, 0);
         gray = new Mat();
@@ -107,44 +91,48 @@ public class CamManager {
 
         if (b) {
             mWidth = (getDistance(mMonitor[0], mMonitor[1]) + getDistance(mMonitor[2], mMonitor[3])) / 2.f;
-            pHeight1 = getDistance(mMonitor[0], mMonitor[3]);
-            pHeight2 = getDistance(mMonitor[1], mMonitor[2]);
-            mHeight = (pHeight1 + pHeight2) / 2.f;
+            oldHeight1 = getDistance(mMonitor[0], mMonitor[3]);
+            oldHeight2 = getDistance(mMonitor[1], mMonitor[2]);
+            last_dist_step = 0;
+            mHeight = (oldHeight1 + oldHeight2) / 2.f;
         } else
             mFound = false;
 
         return mFound;
     }
 
+    // Monitor vizszintes tavolsaga a kepernyo kozepetol ( px )
     public double getMonitorXDistance() {
         double _dist = 0;
         if (mFound) {
             //Kozeppont megadasa
-            mCenter.x = 0;
-            mCenter.y = 0;
             for (int p = 0; p < 4; p++) {
-                mCenter.x += mMonitor[p].x;
-                mCenter.y += mMonitor[p].y;
+                _dist += mMonitor[p].x;
             }
-            mCenter.x /= 4;
-            mCenter.y /= 4;
-
-            _dist = (CAM_WIDTH / 2.d) - mCenter.x;
+            _dist = (CAM_WIDTH / 2.d) - _dist / 4;
         }
         return _dist;
     }
 
     public boolean getDistances(int _dist_step) {
+        // Tavolsag meghatarozasa ( ha volt mar sikertelen osszehasonlitas akkor meg kozelebb megy )
+        last_dist_step += _dist_step;
         if (scanSquares() && selectBestSquare()) {
             /* Kamera tavolsaganak kiszamolasa a regi es az uj kep segitsegevel
                  Megnezi hogy a vizsgalt targy DIST_STEP meretu kozelitesre mennyivel no meg. */
-            double aHeight1 = getDistance(mMonitor[0], mMonitor[3]);
-            double aHeight2 = getDistance(mMonitor[1], mMonitor[2]);
-            mDist = _dist_step * mHeight / ((aHeight1 + aHeight2) / 2 - mHeight);
+            double newHeight1 = getDistance(mMonitor[0], mMonitor[3]);
+            double newHeight2 = getDistance(mMonitor[1], mMonitor[2]);
+
+            // Ha tul kicsi a kulombseg,nem lehet tavolsagot becsulni
+            if (Math.abs(mHeight - newHeight1) < 2)
+                return false;
+
+            mDist = last_dist_step * mHeight / ((newHeight1 + newHeight2) / 2 - mHeight);
 
             // Megnezi kulon mind ket oldalt is
-            pHeight1 = _dist_step * pHeight1 / (aHeight1 - pHeight1);
-            pHeight2 = _dist_step * pHeight2 / (aHeight2 - pHeight2);
+            oldHeight1 = last_dist_step * oldHeight1 / (newHeight1 - oldHeight1);
+            oldHeight2 = last_dist_step * oldHeight2 / (newHeight2 - oldHeight2);
+            last_dist_step = 0;
 
             // Milyen szelesnek latszik a kepernyo
             double proj_width = Math.abs(mMonitor[0].x + mMonitor[3].x - mMonitor[1].x - mMonitor[2].x) / 2.f;
@@ -152,14 +140,20 @@ public class CamManager {
             // Kiszamolja hogy a kamera sikjara levetitve hany centi szeles a kepernyo
             mWidth = (proj_width / CAM_WIDTH) * mDist * CAM_H_FOV * 2;
 
+            /*
+                 camera         \--------
+                /     mDist      \      |
+               *------------------|     | mWidth
+               |    oldHeight1     \    |
+               |--------------------\----
+            */
             //Elfordultsag kiszamitasa (nem bizonyitjuk :P )
-            mDir = Math.atan((Math.max(pHeight1, pHeight2) - mDist) / (mWidth/2));
-            if (pHeight1 > pHeight2)
-                mDir = Math.PI/2 + mDir;
+            mDir = Math.atan((Math.max(oldHeight1, oldHeight2) - mDist) / (mWidth / 2));
+            if (oldHeight1 > oldHeight2)
+                mDir = Math.PI / 2 + mDir;
             else
-                mDir = Math.PI/2 - mDir;
+                mDir = Math.PI / 2 - mDir;
 
-            // TODO: DIR
             return true;
         }
         return false;
