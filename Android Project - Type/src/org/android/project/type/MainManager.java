@@ -12,7 +12,7 @@ public class MainManager {
 
 	// SETTINGS:
 	private int DIST_STEP = 5;
-	
+
 	// konstans adatok:
 	private double faultLimit = 100.;
 	private double monitorHeight = 19; // cm
@@ -109,9 +109,7 @@ public class MainManager {
 			}
 			break;
 		default:
-
 			break;
-
 		}
 	}
 
@@ -121,6 +119,8 @@ public class MainManager {
 
 	public Mat drawDebug(CvCameraViewFrame inputFrame) {
 		mCam.setFrame(inputFrame);
+
+		mCam.drawSquars();
 
 		// Debug draw
 		if (mCam.mFound) {
