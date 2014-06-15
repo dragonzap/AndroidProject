@@ -41,7 +41,6 @@ public class MainManager {
                 if (mCam.getMonitor()) {
                     spiralVar = 0;
                     status = STATUS_ENUM.ALIGN_CENTER;
-                    update();
                 } else {
                     Log.v("ford", "Nincs monitor, spiralban haladas");
                     goSpiral();
@@ -51,7 +50,7 @@ public class MainManager {
                 Log.v("ford", "Kozepre navigalas");
                 if (alignCenter()) {
                     status = STATUS_ENUM.DISTANCE;
-                    mDEBUG_TEXT = mRobot.moveTo(RobotManager.DIR_ENUM.FORWARD, DIST_STEP);
+                    update();
                 } else {
                     status = STATUS_ENUM.UPDATE_IMAGE;
                 }
@@ -59,7 +58,7 @@ public class MainManager {
             case DISTANCE:
                 Log.v("ford", "Monitor meretenek es tavolsaganak kiszamolasa");
                 if (mCam.getDistances(DIST_STEP)) {
-                    mDEBUG_TEXT = "Monitor becsult tavolsaga : " + Double.toString(mCam.mDistF);
+                    mDEBUG_TEXT = "Monitor becsult tavolsaga : " + Double.toString(mCam.mDist);
                     status = STATUS_ENUM.FACE_TO_FACE;
                     update();
                 } else {
@@ -119,7 +118,7 @@ public class MainManager {
                 new Scalar(255, 0, 0));
 
         //Draw position
-        Core.putText(mCam.getDebugFrame(), "Dist: " + Double.toString(mCam.mDistF) + "cm Dir: " + Double.toString(Math.toDegrees(mCam.mDir)) + "deg", new Point(0, height - 60), 1, 2,
+        Core.putText(mCam.getDebugFrame(), "Dist: " + Double.toString(mCam.mDist) + "cm Dir: " + Double.toString(mCam.mDir * 57.2957795d) + "deg", new Point(0, height - 60), 1, 2,
                 new Scalar(0, 255, 0));
 
         Core.putText(mCam.getDebugFrame(), "h1: " + Double.toString(Math.round(mCam.mWidth)) + " h2: " + Double.toString(Math.round(mCam.mHeight)) + " size:" + Double.toString(Math.round(mCam.mSize)) + "col", new Point(0, height - 30), 1, 2,
@@ -134,17 +133,17 @@ public class MainManager {
         int rotVar = 5;
         if (Math.abs(distX) > faultLimit) {
             // TODO: Robot forgatas
-                mDEBUG_TEXT = "Elfordulok " + Integer.toString(rotVar) + " fokot";
-                Log.v("ford", "Elfordulok " + Integer.toString(rotVar) + " fokot");
-                if(distX > 0)
-                {
-                	mRobot.rot(rotVar);
-                }
-                else
-                {
-                	mRobot.rot(0-rotVar);
-                }
-                
+            mDEBUG_TEXT = "Elfordulok " + Integer.toString(rotVar) + " fokot";
+            Log.v("ford", "Elfordulok " + Integer.toString(rotVar) + " fokot");
+            if(distX > 0)
+            {
+                mRobot.rot(rotVar);
+            }
+            else
+            {
+                mRobot.rot(0-rotVar);
+            }
+
         } else {
             Log.v("ford", "A monitor a kep kozepen van");
             return true;
@@ -152,57 +151,38 @@ public class MainManager {
         return false;
     }
 
+
     public boolean frontBestSquare() {
-        // TODO: CameraManager adatainak hasznalata
-        /*double heightLeft = mCam
-                .getDistance(mCam.mMonitor[0], mCam.mMonitor[3]);
-        double heightRight = mCam.getDistance(mCam.mMonitor[1],
-                mCam.mMonitor[2]);
-        double widthTop = mCam.getDistance(mCam.mMonitor[0], mCam.mMonitor[1]);
-        double widthBottom = mCam.getDistance(mCam.mMonitor[2],
-                mCam.mMonitor[3]);
-        // double currentWidth = (mCam.getDistance(mCam.mMonitor[0],
-        // mCam.mMonitor[1]) + mCam.getDistance(mCam.mMonitor[2],
-        // mCam.mMonitor[3]))/2;
-        double currentWidth = (widthTop + widthBottom) / 2;
 
+        //double tav = 100;
+        //double szog = 45;
 
-        if (Math.abs(heightLeft - heightRight) < 20) {
+        double tav = mCam.mDist;
+        double szog = mCam.mDir;
+        double szogFault = 20;
+
+        if (Math.abs(szog-90) < szogFault) {
             Log.v("ford", "A kamera szemben van a monitorral");
             return true;
         }
 
-        double mainSide = (heightLeft + heightRight) / 2;
-        double tav;
-        tav = (50 * mainSide) / monitorHeightPx; // monitor-kamera távolság
-        double maxWidth = (tav * monitorWidthPx) / 50;
+        double oldalra = Math.tan(Math.toRadians(90-szog))*tav;
+        double ford = 90-szog;
 
-        // logok
-        Log.v("ford", "Monitor-kamera tavolsag: " + Double.toString(tav));
-        Log.v("ford", "currentWidth: " + Double.toString(currentWidth));
-        Log.v("ford", "maxWidth: " + Double.toString(maxWidth));
+        mDEBUG_TEXT = mRobot.moveTo(RobotManager.DIR_ENUM.RIGHT, oldalra);
+        mRobot.rot((int)ford);
 
-        int ford = (int) Math.round(Math.asin(currentWidth / maxWidth) * (360 / (2 * Math.PI)));
-        Log.v("ford", Double.toString(ford));
-        double oldal = Math.round(Math.tan(90 - ford) * tav);
-        ford = 90 - ford;
+        Log.v("ford", "Oldalra mentem: " + Double.toString(oldalra));
+        Log.v("ford", "Fordultam: " + Double.toString(ford));
 
-        if (heightLeft < heightRight) {
-            mDEBUG_TEXT = mRobot.moveTo(RobotManager.DIR_ENUM.RIGHT, Math.abs(oldal));
-            mRobot.rot(ford);
-            mDEBUG_TEXT += " ,elfordulok " + Double.toString(ford);
-        } else {
-            mDEBUG_TEXT = mRobot.moveTo(RobotManager.DIR_ENUM.LEFT, Math.abs(oldal));
-            mRobot.rot(-ford);
-            mDEBUG_TEXT += " ,elfordulok " + Double.toString(-ford);
-        }*/
-        return false;
+        return true;
+
     }
 
     public boolean closerToMonitor() {
-        if (mCam.mDistF > 60)// Ha messzebb van mint 60cm akkor kozelebb megy
+        if (mCam.mDist > 60)// Ha messzebb van mint 60cm akkor kozelebb megy
         {
-            mDEBUG_TEXT = mRobot.moveTo(RobotManager.DIR_ENUM.FORWARD, mCam.mDistF - 60);
+            mDEBUG_TEXT = mRobot.moveTo(RobotManager.DIR_ENUM.FORWARD, mCam.mDist - 60);
             return false;
         } else {
             Log.v("ford", "A monitor a megfelelo tavolsagban van");

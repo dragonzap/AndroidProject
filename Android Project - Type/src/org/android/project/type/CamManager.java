@@ -52,8 +52,8 @@ public class CamManager {
 	private List<Point[]> result = new ArrayList<Point[]>();
 	private Mat mImage, mOutImg;
 	
-	private double pHeight1 = 0;
-	private double pHeight2 = 0;
+	public double pHeight1 = 0;
+    public double pHeight2 = 0;
 
 	// Cache
 	Mat gray, timg;
@@ -144,6 +144,12 @@ public class CamManager {
 			double aHeight1 = getDistance(mMonitor[0], mMonitor[3]);
 			double aHeight2 = getDistance(mMonitor[1], mMonitor[2]);
 
+            // Milyen szelesnek latszik a kepernyo
+            double proj_height = Math.abs(mMonitor[0].x + mMonitor[3].x - mMonitor[1].x - mMonitor[2].x) / 2.f;
+
+
+            mDir = Math.asin((aHeight1 - aHeight2) / 2  / proj_height);
+
             Log.v("ford", "Monitor bal szele: " + Double.toString(pHeight1));
             Log.v("ford", "Monitor jobb szele: " + Double.toString(pHeight2));
 
@@ -159,24 +165,25 @@ public class CamManager {
             // Atlagolas
             mDist = (pHeight1 + pHeight2 + mDist) / 3;
 
-			// Milyen szelesnek latszik a kepernyo
-			double proj_height = Math.abs(mMonitor[0].x + mMonitor[3].x - mMonitor[1].x - mMonitor[2].x) / 2.f;
 
 			// Kiszamolja hogy a kamera sikjara levetitve hany centi szeles a kepernyo
 			mWidth = (proj_height / CAM_WIDTH) * mDist * CAM_H_FOV;
 
-			// Kiszamolja a szoget a ket oldal tavolsaganak a kulombsege / vetitett szelesseg
-            mDir = Math.asin((aHeight1 - aHeight2) / aHeight2);
+            // Kiszamolja a szoget a ket oldal tavolsaganak a kulombsege / vetitett szelesseg
+            mDir = Math.asin((aHeight1 - aHeight2) / proj_height);
 
-			mDir += Math.atan((pHeight1 - pHeight2) / mWidth);
+			//mDir += Math.atan((pHeight1 - pHeight2) / mWidth);
 
 			// Monitor valodi meretei
 			mWidth = Math.sqrt( Math.pow(mWidth, 2) + Math.pow(pHeight1 - pHeight2, 2));
-            mDir += Math.asin((pHeight1 - pHeight2) / mWidth);
-            mDir /=3;
+            //mDir += Math.asin((pHeight1 - pHeight2) / mWidth);
+            //mDir /=3;
 
             Log.v("ford", "a: " + Double.toString(pHeight1 - pHeight2));
             Log.v("ford", "c: " + Double.toString(mWidth));
+
+            mDir = Math.PI/2 - mDir;
+
             //mDir /= 2;
           /*  mDir = Math.toDegrees(mDir);
             mDir = Math.PI/4 - Math.abs(mDir);
