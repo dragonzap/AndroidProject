@@ -41,6 +41,7 @@ public class MainManager {
                 if (mCam.getMonitor()) {
                     spiralVar = 0;
                     status = STATUS_ENUM.ALIGN_CENTER;
+                    update();
                 } else {
                     Log.v("ford", "Nincs monitor, spiralban haladas");
                     goSpiral();
@@ -50,7 +51,7 @@ public class MainManager {
                 Log.v("ford", "Kozepre navigalas");
                 if (alignCenter()) {
                     status = STATUS_ENUM.DISTANCE;
-                    update();
+                    mDEBUG_TEXT = mRobot.moveTo(RobotManager.DIR_ENUM.FORWARD, DIST_STEP);
                 } else {
                     status = STATUS_ENUM.UPDATE_IMAGE;
                 }
