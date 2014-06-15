@@ -16,7 +16,7 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 public class CamManager {
-
+	// komment :D
 	// SETTINGS:
 	static byte THRESH = 50;
 	static byte THRESH_LEVEL = 1;
