@@ -9,7 +9,7 @@ public class RobotManager {
 		FORWARD, BACKWARD, RIGHT, LEFT
 	}
 	
-	public double posX = 0, posY = 0;	//cm
+	//public double posX = 0, posY = 0;	//cm
 	public int rot = 0;	// deg
 
 	public double targetX = 0, targetY = 0;	//cm

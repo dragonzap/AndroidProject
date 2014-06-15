@@ -157,7 +157,7 @@ public class CamManager {
             Log.v("ford", "Monitor jobb szele: " + Double.toString(pHeight2));
 
             // Atlagolas
-            mDistF = (pHeight1 + pHeight2 + mDist) / 3;
+            mDist = (pHeight1 + pHeight2 + mDist) / 3;
 
 			// Milyen szelesnek latszik a kepernyo
 			double proj_height = Math.abs(mMonitor[0].x + mMonitor[3].x - mMonitor[1].x - mMonitor[2].x) / 2.f;
