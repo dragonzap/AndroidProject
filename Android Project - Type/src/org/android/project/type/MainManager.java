@@ -50,7 +50,7 @@ public class MainManager {
                 Log.v("ford", "Kozepre navigalas");
                 if (alignCenter()) {
                     status = STATUS_ENUM.DISTANCE;
-                    update();
+                    mDEBUG_TEXT = mRobot.moveTo(RobotManager.DIR_ENUM.FORWARD, DIST_STEP);
                 } else {
                     status = STATUS_ENUM.UPDATE_IMAGE;
                 }
@@ -152,7 +152,7 @@ public class MainManager {
     }
 
 
-    // mûködik!
+    // mï¿½kï¿½dik!
     public boolean frontBestSquare() {
 
         //double tav = 100;

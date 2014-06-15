@@ -170,7 +170,7 @@ public class CamManager {
 			mWidth = (proj_height / CAM_WIDTH) * mDist * CAM_H_FOV;
 
             // Kiszamolja a szoget a ket oldal tavolsaganak a kulombsege / vetitett szelesseg
-            mDir = Math.asin((aHeight1 - aHeight2) / proj_height);
+            mDir = Math.acos(mWidth / Math.sqrt( Math.pow(mWidth, 2) + Math.pow(pHeight1 - pHeight2, 2)));
 
 			//mDir += Math.atan((pHeight1 - pHeight2) / mWidth);
 
