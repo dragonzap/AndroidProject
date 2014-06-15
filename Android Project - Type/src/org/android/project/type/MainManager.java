@@ -94,7 +94,7 @@ public class MainManager {
 			break;
 		case CLOSE_TO:
 			Log.v("ford", "Monitor megkozelitese");
-			if (closerToTheSquare()) {
+			if (closerToMonitor()) {
 				status = STATUS_ENUM.END;
 				mDEBUG_TEXT = "Kesz";
 			} else {
@@ -137,7 +137,7 @@ public class MainManager {
 		//Draw position
 		Core.putText(mCam.getDebugFrame(), "Dist: " + Double.toString(mCam.mDist) + "cm Dir: " + Double.toString(90 - mCam.mDir * 57.2957795d) + "deg", new Point(0, height-60), 1, 2,
 				new Scalar(0, 255, 0));
-		
+
 		Core.putText(mCam.getDebugFrame(), "h1: " + Double.toString(Math.round(mCam.mWidth)) + " h2: " + Double.toString(Math.round(mCam.mHeight)) + " size:" + Double.toString(Math.round(mCam.mSize)) + "col", new Point(0, height-30), 1, 2,
 				new Scalar(0, 255, 0));
 
@@ -223,21 +223,10 @@ public class MainManager {
 		return false;
 	}
 
-	public boolean closerToTheSquare() {
-		double heightLeft = mCam
-				.getDistance(mCam.mMonitor[0], mCam.mMonitor[3]);
-		double heightRight = mCam.getDistance(mCam.mMonitor[1],
-				mCam.mMonitor[2]);
-		double mainSide = (heightLeft + heightRight) / 2;
-		double tav;
-		tav = (50 * mainSide) / monitorHeightPx; // monitor-kamera távolság
-		double forward = 0;
-
-		if (mainSide / height < .8f)// (tav > 60)
+	public boolean closerToMonitor() {
+		if (mCam.mDist > 60)// Ha messzebb van mint 60cm akkor kozelebb megy
 		{
-			forward = 5;
-			mRobot.forward(forward);
-			mDEBUG_TEXT = "Menj elore " + Double.toString(forward) + "cm-t";
+			mDEBUG_TEXT = mRobot.moveTo(RobotManager.DIR_ENUM.FORWARD, mCam.mDist - 60);
 			return false;
 		} else {
 			Log.v("ford", "A monitor a megfelelo tavolsagban van");
@@ -247,9 +236,6 @@ public class MainManager {
 
 	public void goSpiral() {
 		spiralVar += 10;
-		mRobot.forward(spiralVar);
-		mRobot.rot(90);
-		mDEBUG_TEXT = "Fordulj el 90 fokot es menj elore "
-				+ Double.toString(spiralVar) + "cm-t";
+		mDEBUG_TEXT = mRobot.moveTo(RobotManager.DIR_ENUM.RIGHT, spiralVar);
 	}
 }
