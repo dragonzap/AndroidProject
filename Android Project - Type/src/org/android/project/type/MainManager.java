@@ -152,6 +152,7 @@ public class MainManager {
     }
 
 
+    // mûködik!
     public boolean frontBestSquare() {
 
         //double tav = 100;
@@ -179,6 +180,7 @@ public class MainManager {
 
     }
 
+   
     public boolean closerToMonitor() {
         if (mCam.mDist > 60)// Ha messzebb van mint 60cm akkor kozelebb megy
         {
