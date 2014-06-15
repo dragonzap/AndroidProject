@@ -118,23 +118,29 @@ public class CamManager {
 		return mFound;
 	}
 
-    public float getMonitorXDistance()
+    public double getMonitorXDistance()
     {
-        return 0;
+        double _dist = 0;
+        if (mFound) {
+            //Kozeppont megadasa
+            mCenter.x = 0;
+            mCenter.y = 0;
+            for (int p = 0; p < 4; p++) {
+                mCenter.x += mMonitor[p].x;
+                mCenter.y += mMonitor[p].y;
+            }
+            mCenter.x /= 4;
+            mCenter.y /= 4;
+
+            _dist = (CAM_WIDTH / 2.d)  / mCenter.x;
+        }
+        return _dist;
     }
 
 	public boolean getDistances(int _dist_step) {
 		if (scanSquares() && selectBestSquare())
 		{
-			//Kozeppont megadasa
-			mCenter.x = 0;
-			mCenter.y = 0;
-			for (int p = 0; p < 4; p++) {
-				mCenter.x += mMonitor[p].x;
-				mCenter.y += mMonitor[p].y;
-			}
-			mCenter.x /= 4;
-			mCenter.y /= 4;
+
 
 			/* Kamera tavolsaganak kiszamolasa a regi es az uj kep segitsegevel
 			 * Megnezi hogy a vizsgalt targy DIST_STEP meretu kozelitesre mennyivel no meg.
