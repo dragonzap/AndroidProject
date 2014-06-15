@@ -41,6 +41,7 @@ public class MainManager {
                 if (mCam.getMonitor()) {
                     spiralVar = 0;
                     status = STATUS_ENUM.ALIGN_CENTER;
+                    update();
                 } else {
                     Log.v("ford", "Nincs monitor, spiralban haladas");
                     goSpiral();
@@ -135,13 +136,10 @@ public class MainManager {
             // TODO: Robot forgatas
             mDEBUG_TEXT = "Elfordulok " + Integer.toString(rotVar) + " fokot";
             Log.v("ford", "Elfordulok " + Integer.toString(rotVar) + " fokot");
-            if(distX > 0)
-            {
+            if (distX > 0) {
                 mRobot.rot(rotVar);
-            }
-            else
-            {
-                mRobot.rot(0-rotVar);
+            } else {
+                mRobot.rot(0 - rotVar);
             }
 
         } else {
@@ -151,8 +149,7 @@ public class MainManager {
         return false;
     }
 
-
-    // m�k�dik!
+    // mukodik!
     public boolean frontBestSquare() {
 
         //double tav = 100;
@@ -162,25 +159,24 @@ public class MainManager {
         double szog = mCam.mDir;
         double szogFault = 20;
 
-        if (Math.abs(szog-90) < szogFault) {
+        if (Math.abs(szog - 90) < szogFault) {
             Log.v("ford", "A kamera szemben van a monitorral");
             return true;
         }
 
-        double oldalra = Math.tan(Math.toRadians(90-szog))*tav;
-        double ford = 90-szog;
+        double oldalra = Math.tan(Math.toRadians(90 - szog)) * tav;
+        double ford = 90 - szog;
 
         mDEBUG_TEXT = mRobot.moveTo(RobotManager.DIR_ENUM.RIGHT, oldalra);
-        mRobot.rot((int)ford);
+        mRobot.rot((int) ford);
 
         Log.v("ford", "Oldalra mentem: " + Double.toString(oldalra));
         Log.v("ford", "Fordultam: " + Double.toString(ford));
 
         return true;
-
     }
 
-   
+
     public boolean closerToMonitor() {
         if (mCam.mDist > 60)// Ha messzebb van mint 60cm akkor kozelebb megy
         {
