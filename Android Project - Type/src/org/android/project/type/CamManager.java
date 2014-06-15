@@ -31,10 +31,24 @@ public class CamManager {
 	public Point[] mMonitor = new Point[4];
 	public double mWidth = 0;	// px
 	public double mHeight = 0;	// px
-	public double mDist = 0;	// cm
+	public double mDistF = 0;	// cm elorefele
+    public double mDistS = 0;	// cm oldalra
 	public double mSize = 0;	// col
 	public double mDir = 0;		// radian
 	public Point mCenter, scrCenter;
+
+    /*
+    |
+    | camera
+    |/
+    *------------------|
+    |                \ | mDistS
+    |                 \|
+    |------------------* - monitor
+    |      mDistF       \
+    |                    \
+
+     */
 
 	private List<Point[]> result = new ArrayList<Point[]>();
 	private Mat mImage, mOutImg;
@@ -45,13 +59,15 @@ public class CamManager {
 	// Cache
 	Mat gray, timg;
 
-	public CamManager(int width, int height) {
+	public CamManager(int _w, int _h) {
+        CAM_WIDTH = _w;
+        CAM_HEIGHT = _h;
 		mCenter = new Point();
 		scrCenter = new Point();
-		scrCenter.x = width / 2;
-		scrCenter.y = height / 2;
-		mImage = new Mat(width, height, 0);
-		mOutImg = new Mat(width, height, 0);
+		scrCenter.x = CAM_WIDTH / 2;
+		scrCenter.y = CAM_HEIGHT / 2;
+		mImage = new Mat(CAM_WIDTH, CAM_HEIGHT, 0);
+		mOutImg = new Mat(CAM_WIDTH, CAM_HEIGHT, 0);
 		gray = new Mat();
 		timg = new Mat();
 	}
@@ -72,7 +88,7 @@ public class CamManager {
 		return mOutImg;
 	}
 
-	public void drawSquars() {
+	public void drawSquares() {
 		for (int s = 0; s < result.size(); s++) {
 			for (int i = 0; i < 4; i++) {
 				Core.line(mOutImg, result.get(s)[i],
@@ -120,7 +136,8 @@ public class CamManager {
 			 */
 			double aHeight1 = getDistance(mMonitor[0], mMonitor[3]);
 			double aHeight2 = getDistance(mMonitor[1], mMonitor[2]);
-			mDist = _dist_step * mHeight / ((aHeight1 + aHeight2)/2 - mHeight);
+			mDistF = _dist_step * mHeight / ((aHeight1 + aHeight2)/2 - mHeight);
+            mDistS = ((scrCenter.x - mCenter.x) / CAM_WIDTH) * mDistF * CAM_H_FOV;
 
 			// Megnezi kulon mind ket oldalt is
 			pHeight1 = _dist_step * pHeight1 / (aHeight1 - pHeight1);
@@ -130,7 +147,7 @@ public class CamManager {
 			double proj_height = Math.abs(mMonitor[0].x + mMonitor[3].x - mMonitor[1].x - mMonitor[2].x) / 2.f;
 
 			// Kiszamolja hogy a kamera sikjara levetitve hany centi szeles a kepernyo
-			mWidth = (proj_height / CAM_WIDTH) * mDist * CAM_H_FOV;
+			mWidth = (proj_height / CAM_WIDTH) * mDistF * CAM_H_FOV;
 
 			// Kiszamolja a szoget a ket oldal tavolsaganak a kulombsege / vetitett szelesseg
 			mDir = Math.atan((pHeight1 - pHeight2) / mWidth);
@@ -138,7 +155,7 @@ public class CamManager {
 			// Monitor valodi meretei
 			mWidth = Math.sqrt( Math.pow(mWidth, 2) + Math.pow(pHeight1 - pHeight2, 2));
 			mHeight = (aHeight1 + aHeight2)/2;
-			mHeight = (mHeight / CAM_HEIGHT) * mDist * CAM_V_FOV;
+			mHeight = (mHeight / CAM_HEIGHT) * mDistF * CAM_V_FOV;
 			mSize = Math.sqrt(Math.pow(mWidth, 2) + Math.pow(mHeight,2)) / 2.54d;	// atvaltas colba
 			return true;
 		}
@@ -245,7 +262,6 @@ public class CamManager {
 		}
 		return mFound;
 	}
-
 
 	/*
 	 * 0------------1 Sorba rendezi a pontokat 
