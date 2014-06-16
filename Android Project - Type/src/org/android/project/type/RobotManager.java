@@ -1,56 +1,72 @@
 package org.android.project.type;
 
-/* 
- * A telefon mozgatasa
- */
+import java.util.ArrayList;
+import java.util.List;
 
+// A telefon mozgatasa
 public class RobotManager {
-    public enum DIR_ENUM {
-        FORWARD, BACKWARD, RIGHT, LEFT
+    public String mDEBUG = "";
+
+    private enum ACT_ENUM {MOVE, ROTATION}
+
+    private class Action {
+        public ACT_ENUM type;
+        public double value;// cm vagy radian
     }
 
-    //public double posX = 0, posY = 0;	//cm
-    public int rot = 0;    // deg
+    private List<Action> actions = new ArrayList<Action>();
+    private MainManager mMain;
 
-    public double targetX = 0, targetY = 0;    //cm
-    public int targetR = 0;    //deg
+    public RobotManager(MainManager _m) {
+        mMain = _m;
+    }
 
-    public String moveTo(DIR_ENUM direction, double distance) {
-        String _t = "";
-        int _r = 0;
-        switch (direction) {
-            case RIGHT:
-                _r = 90;
-                _t = "jobbra";
-                break;
-            case LEFT:
-                _r = -90;
-                _t = "balra";
-                break;
-            case FORWARD:
-                _t = "elore";
-                break;
-            case BACKWARD:
-                distance *= -1;
-                _t = "hatra";
-                break;
+    // Feladat hozzaadasa ( cm )
+    public void forward(double _dist) {
+        if (_dist == 0)
+            return;
+
+        Action a = new Action();
+        a.type = ACT_ENUM.MOVE;
+        a.value = _dist;
+        actions.add(a);
+    }
+
+    // Feladat hozzaadasa ( fok )
+    public void rot(int _deg) {
+        if (_deg == 0)
+            return;
+
+        Action a = new Action();
+        a.type = ACT_ENUM.ROTATION;
+        a.value = Math.toRadians(_deg);
+        actions.add(a);
+    }
+
+    // Robot elvegzet egy feladatot
+    public boolean nextAction() {
+        if (actions.isEmpty()) {
+            mDEBUG = "";
+            mMain.arrived();
+            return true;
         }
 
-        rot(_r);
-        forward(distance);
-        rot(-_r);
+        //TODO: mDEBUG helyere a robot mozgatasa
+        Action a = actions.get(0);
+        if (a.type == ACT_ENUM.MOVE) {
+            if (a.value > 0)
+                mDEBUG = "mentem elore " + Long.toString(Math.round(a.value)) + "cm-t";
+            else
+                mDEBUG = "mentem hatra " + Long.toString(-Math.round(a.value)) + "cm-t";
+        } else
+            mDEBUG = "elfordultam " + Long.toString(Math.round(Math.toDegrees(a.value))) + " fokot";
 
-        return "mentem " + _t + " " + Double.toString(Math.abs(distance)) + "-cmt";
+        actions.remove(0);
+        return false;
     }
 
-    public void forward(double _dist) {
-        //TODO: elore megy _dist tavot
-        targetX += Math.cos(rot) * _dist;
-        targetY += Math.sin(rot) * _dist;
-    }
-
-    public void rot(int _deg) {
-        // TODO : robot forgatasa r
-        targetR += _deg;
+    // Megerkezett-e a celhoz
+    public boolean isArrived() {
+        return actions.isEmpty();
     }
 }

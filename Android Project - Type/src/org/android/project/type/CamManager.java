@@ -3,8 +3,6 @@ package org.android.project.type;
 import java.util.ArrayList;
 import java.util.List;
 
-import android.util.Log;
-
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
@@ -17,51 +15,78 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
+import android.os.AsyncTask;
+
 public class CamManager {
-    // komment :D
     // SETTINGS:
+    static int CAM_WIDTH = 1280;        // px
+    static int CAM_HEIGHT = 800;        // px
+    static short MIN_SQUARE_SIZE = 1000;// px^2
+    static byte MONITOR_SCAN = 5;       // nincs azonostitott monitor
+    static byte MONITOR_RESCAN = 5;     // van azonositott monitor
+    static float ASPECT_THRESH = 0.2f;
     static byte THRESH = 50;
     static byte THRESH_LEVEL = 1;
-    static short MIN_SQUARE_SIZE = 1000;
-    static float ASPECT_THRESH = 0.2f;
-    static int CAM_WIDTH = 1280;
-    static int CAM_HEIGHT = 800;
     static double CAM_H_FOV = 0.58318276339d;    // tg( 60.5° / 2 )
-    //static double CAM_V_FOV = 0.44732161718d;        // tg( 48.2° / 2 )
+    //static double CAM_V_FOV = 0.44732161718d;  // tg( 48.2° / 2 )
 
-    public boolean mFound = false;
-    public Point[] mMonitor = new Point[4];
-    public double mWidth = 0;    // px
-    public double mHeight = 0;    // px
-    public double mDist = 0;    // cm
-    public double mSize = 0;    // col
-    public double mDir = 0;        // radian
-    public Point mCenter;
+
+    private byte rescan = 0;
+    private boolean busy = false;
+    private boolean found = false;
+
+    private double distance = 0;    // cm
+    private double direction = 0;   // radians
 
     private List<Point[]> result = new ArrayList<Point[]>();
+    private Point[] lastMonitor = new Point[4];
+    private Point[] newMonitor = new Point[4];
     private Mat mImage, mOutImg;
-    private double oldHeight1 = 0;
-    private double oldHeight2 = 0;
-    private int last_dist_step = 0;
+    private double oldHeight1 = 0;  // px
+    private double oldHeight2 = 0;  // px
+    private double newHeight1 = 0;  // px
+    private double newHeight2 = 0;  // px
+
+    private MainManager mMain;
 
     // Cache
     Mat gray, timg;
 
-    public CamManager(int _w, int _h) {
+    public CamManager(int _w, int _h, MainManager _m) {
         CAM_WIDTH = _w;
         CAM_HEIGHT = _h;
-        mCenter = new Point();
+        mMain = _m;
         mImage = new Mat(CAM_WIDTH, CAM_HEIGHT, 0);
         mOutImg = new Mat(CAM_WIDTH, CAM_HEIGHT, 0);
         gray = new Mat();
         timg = new Mat();
     }
 
+    // Tisztitas
     public void clear() {
         mImage.release();
         mOutImg.release();
     }
 
+    public boolean isReady() {
+        return !busy;
+    }
+
+    public boolean isFound() {
+        return found;
+    }
+
+    //Monitor tavolsaga cm-ben
+    public double getDistance() {
+        return distance;
+    }
+
+    // Monitor elfordultsaga ranianba
+    public double getDirection() {
+        return direction;
+    }
+
+    // Kamera kep frissitese
     public void setFrame(CvCameraViewFrame _frame) {
         mImage.release();
         mImage = _frame.rgba();
@@ -70,113 +95,125 @@ public class CamManager {
     }
 
     public Mat getDebugFrame() {
+        drawDebug();
         return mOutImg;
     }
 
-    public void drawSquares() {
-        for (Point[] s : result) {
-            for (int i = 0; i < 4; i++) {
-                Core.line(mOutImg, s[i],
-                        s[(i + 1) % 4], new Scalar(0, 255, 255));
-            }
+    // Monitor keresese
+    public void scanMonitor() {
+        // Ha nincs még feldolgozás alatt
+        if (!busy) {
+            rescan = found ? MONITOR_RESCAN : MONITOR_SCAN;
+            new ImageScanner().execute(mImage.clone());
         }
-    }
-
-    public boolean getMonitor() {
-        boolean b = scanSquares() && selectBestSquare();
-        for (short i = 0; mFound && !b && i < 3; i++)    // ha nem talal megprobalja meg 3x
-        {
-            b = scanSquares() && selectBestSquare();
-        }
-
-        if (b) {
-            mWidth = (getDistance(mMonitor[0], mMonitor[1]) + getDistance(mMonitor[2], mMonitor[3])) / 2.f;
-            oldHeight1 = getDistance(mMonitor[0], mMonitor[3]);
-            oldHeight2 = getDistance(mMonitor[1], mMonitor[2]);
-            last_dist_step = 0;
-            mHeight = (oldHeight1 + oldHeight2) / 2.f;
-        } else
-            mFound = false;
-
-        return mFound;
     }
 
     // Monitor vizszintes tavolsaga a kepernyo kozepetol ( px )
     public double getMonitorXDistance() {
         double _dist = 0;
-        if (mFound) {
+        if (found) {
             //Kozeppont megadasa
             for (int p = 0; p < 4; p++) {
-                _dist += mMonitor[p].x;
+                _dist += newMonitor[p].x;
             }
             _dist = (CAM_WIDTH / 2.d) - _dist / 4;
         }
         return _dist;
     }
 
-    public boolean getDistances(int _dist_step) {
-        // Tavolsag meghatarozasa ( ha volt mar sikertelen osszehasonlitas akkor meg kozelebb megy )
-        last_dist_step += _dist_step;
-        if (scanSquares() && selectBestSquare()) {
-            /* Kamera tavolsaganak kiszamolasa a regi es az uj kep segitsegevel
+    // Utolso elmozdulas cm
+    public boolean setDisplacement(int _disp) {
+        /* Kamera tavolsaganak kiszamolasa a regi es az uj kep segitsegevel
                  Megnezi hogy a vizsgalt targy DIST_STEP meretu kozelitesre mennyivel no meg. */
-            double newHeight1 = getDistance(mMonitor[0], mMonitor[3]);
-            double newHeight2 = getDistance(mMonitor[1], mMonitor[2]);
+        double newHeightAVG = (newHeight1 + newHeight2) / 2.f;   // px (AVG)
+        double oldHeightAVG = (oldHeight1 + oldHeight2) / 2.f;   // px (AVG)
 
-            // Ha tul kicsi a kulombseg,nem lehet tavolsagot becsulni
-            if (Math.abs(mHeight - newHeight1) < 2)
-                return false;
+        // Ha tul kicsi a kulombseg,nem lehet tavolsagot becsulni
+        if (Math.abs(oldHeightAVG - newHeightAVG) < 2) {
+            distance=0;
+            direction=0;
+            return false;
+        }
 
-            mDist = last_dist_step * mHeight / ((newHeight1 + newHeight2) / 2 - mHeight);
+        // Kiszamolja a tavolsagokat
+        distance = _disp * oldHeightAVG / (newHeightAVG - oldHeightAVG);  // cm kozepe
+        oldHeight1 = _disp * oldHeight1 / (newHeight1 - oldHeight1);   // cm baloldal
+        oldHeight2 = _disp * oldHeight2 / (newHeight2 - oldHeight2);   // cm jobb oldal
 
-            // Megnezi kulon mind ket oldalt is
-            oldHeight1 = last_dist_step * oldHeight1 / (newHeight1 - oldHeight1);
-            oldHeight2 = last_dist_step * oldHeight2 / (newHeight2 - oldHeight2);
-            last_dist_step = 0;
+        // Milyen szelesnek latszik a kepernyo
+        double projWidth = Math.abs(newMonitor[0].x + newMonitor[3].x - newMonitor[1].x - newMonitor[2].x) / 2.f; //px
 
-            // Milyen szelesnek latszik a kepernyo
-            double proj_width = Math.abs(mMonitor[0].x + mMonitor[3].x - mMonitor[1].x - mMonitor[2].x) / 2.f;
-
-            // Kiszamolja hogy a kamera sikjara levetitve hany centi szeles a kepernyo
-            mWidth = (proj_width / CAM_WIDTH) * mDist * CAM_H_FOV * 2;
+        // Kiszamolja hogy a kamera sikjara levetitve hany centi szeles a kepernyo
+        projWidth = (projWidth / CAM_WIDTH) * distance * CAM_H_FOV * 2; // cm
 
             /*
                  camera         \--------
                 /     mDist      \      |
-               *------------------|     | mWidth
-               |    oldHeight1     \    |
+               *------------------|     | projWidth
+               |    oldHeight?     \    |
                |--------------------\----
             */
-            //Elfordultsag kiszamitasa (nem bizonyitjuk :P )
-            mDir = Math.atan((Math.max(oldHeight1, oldHeight2) - mDist) / (mWidth / 2));
-            if (oldHeight1 > oldHeight2)
-                mDir = Math.PI / 2 + mDir;
-            else
-                mDir = Math.PI / 2 - mDir;
+        //Elfordultsag kiszamitasa (nem bizonyitjuk :P )
+        direction = Math.atan((Math.max(oldHeight1, oldHeight2) - distance) / (projWidth / 2)); // radians
+        if (oldHeight1 > oldHeight2)
+            direction = Math.PI / 2 + direction;
+        else
+            direction = Math.PI / 2 - direction;
 
-            return true;
-        }
-        return false;
+        return true;
+
     }
 
-    public double getDistance(Point a, Point b) {
+    private double getDistance(Point a, Point b) {
         return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
     }
 
-    private boolean scanSquares() {
-        if (mImage.empty())
+    private class ImageScanner extends AsyncTask<Mat, Integer, Boolean> {
+        protected Boolean doInBackground(Mat... img) {
+            busy = true;
+            if (scanSquares(img[0])) {
+                if (selectMonitor())
+                    return true;
+            }
+            return false;
+        }
+
+        /*protected void onProgressUpdate(Integer... progress) {
+            setProgressPercent(progress[0]);
+        }*/
+
+        protected void onPostExecute(Boolean result) {
+            rescan--;
+            if (result) {
+                rescan = 0;
+                oldHeight1 = newHeight1;
+                oldHeight2 = newHeight2;
+                newHeight1 = getDistance(newMonitor[0], newMonitor[3]);
+                newHeight2 = getDistance(newMonitor[1], newMonitor[2]);
+                busy = false;
+            } else if (rescan > 0)
+                new ImageScanner().execute(mImage.clone());
+            else
+                busy = false;
+
+            mMain.nextStatus();
+        }
+    }
+
+    // negyszogek keresese _img kepen
+    private boolean scanSquares(Mat _img) {
+        if (_img.empty())
             return false;
 
-        result.clear();
-
         // zajtalanitas
-        Imgproc.pyrDown(mImage, timg, new Size(mImage.cols() / 2.0, mImage.rows() / 2));
+        Imgproc.pyrDown(_img, timg, new Size(mImage.cols() / 2.0, mImage.rows() / 2));
         Imgproc.pyrUp(timg, timg, mImage.size());
 
         List<Mat> timgL = new ArrayList<Mat>(), grayL = new ArrayList<Mat>();
         timgL.add(timg);
-        grayL.add(new Mat(mImage.size(), CvType.CV_8U));
+        grayL.add(new Mat(_img.size(), CvType.CV_8U));
 
+        result.clear();
         for (int c = 0; c < 3; c++) {
             int ch[] = {1, 0};
             MatOfInt fromto = new MatOfInt(ch);
@@ -214,8 +251,9 @@ public class CamManager {
         return result.size() != 0;
     }
 
-    public boolean selectBestSquare() {
-        mFound = false;
+    // Megkeresi a legidealisabb negyszoget
+    private boolean selectMonitor() {
+        found = false;
         double maxArea = 10;
         for (Point[] i : result) {
             double heightLeft = getDistance(i[0], i[3]);
@@ -241,14 +279,16 @@ public class CamManager {
             {
                 double area = w * h2; // terület
                 if (area > maxArea) {
-                    mMonitor = i;
-                    mDir = dir; // TODO: torolni kell mert elrontja a szamitas
+                    if (!found)
+                        lastMonitor = newMonitor;
+
+                    newMonitor = i;
                     maxArea = area;
-                    mFound = true;
+                    found = true;
                 }
             }
         }
-        return mFound;
+        return found;
     }
 
     /*
@@ -282,5 +322,23 @@ public class CamManager {
             sort[2] = tmp;
         }
         return sort;
+    }
+
+    private void drawDebug() {
+        // Negyszogek
+        for (Point[] s : result) {
+            for (int i = 0; i < 4; i++) {
+                Core.line(mOutImg, s[i],
+                        s[(i + 1) % 4], new Scalar(0, 255, 255));
+            }
+        }
+
+        // Monitor
+        if (found) {
+            for (int i = 0; i < 4; i++) {
+                Core.line(mOutImg, newMonitor[i],
+                        newMonitor[(i + 1) % 4], new Scalar(255, 255, 0));
+            }
+        }
     }
 }
