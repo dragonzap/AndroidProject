@@ -33,9 +33,11 @@ public class MainManager {
             Log.v("ford", mRobot.mDEBUG);
     }
 
-    public void arrived() {
+    public void arrived(double distance, double angle) {
         if (mCam.isReady())
-            mCam.scanMonitor();
+            mCam.scanMonitor(distance, angle);
+        else
+            Log.v("ford", "Camera foglalt");
     }
 
     public void nextStatus() {
@@ -46,11 +48,17 @@ public class MainManager {
         if (!mCam.isReady())
             return;
 
+        // Ha nincs kamera elkezd keresni
+        if (!mCam.isFound())
+            status = STATUS_ENUM.SCAN_MONITOR;
+
         switch (status) {
             case SCAN_MONITOR:
                 mDEBUG_TEXT = "1. Monitor keresese";
-                if (mCam.isFound())
+                if (mCam.isFound()) {
                     status = STATUS_ENUM.ALIGN_CENTER;
+                    spiralVar = 0;
+                }
                 else
                     goSpiral();
                 break;
@@ -58,50 +66,31 @@ public class MainManager {
                 mDEBUG_TEXT = "2. Monitor kozepre igazitasa";
                 if (alignCenter()) {
                     status = STATUS_ENUM.DISTANCE;
-                    mDEBUG_TEXT = "3. Monitor meretenek becslese";
+                    mDEBUG_TEXT = "3. Monitor tavolsaganak becslese";
                     mRobot.forward(DIST_STEP);
-                } else
-                    status = STATUS_ENUM.UPDATE_IMAGE;
+                }
                 break;
             case DISTANCE:
-                mDEBUG_TEXT = "3. Monitor meretenek becslese";
-                if (mCam.setDisplacement(DIST_STEP))
+
+                if (mCam.getDistance() != 0)
                     status = STATUS_ENUM.CLOSE_TO;
-                else
-                    status = STATUS_ENUM.UPDATE_IMAGE;
+                else {
+                    mDEBUG_TEXT = "3.1. Monitor tavolsaganak ujra becslese (elozo sikertelen)";
+                    mRobot.forward(DIST_STEP);
+                }
                 break;
             case CLOSE_TO:
                 mDEBUG_TEXT = "4. Monitor megkozelitese (becsult tavolsag: " + Double.toString(Math.round(mCam.getDistance())) + " cm)";
                 if (closerToMonitor()) {
-                    if (mCam.getDistance() < 60) // ha messzebb volt mint 60 cm
-                        status = STATUS_ENUM.DISTANCE2;
-                    else
-                        status = STATUS_ENUM.FACE_TO_FACE;
-                } else
-                    status = STATUS_ENUM.UPDATE_IMAGE;
-                break;
-            case DISTANCE2:
-                mDEBUG_TEXT = "5. Monitor meretenek ujra becslese";
-                if (mCam.setDisplacement((int) Math.round(mCam.getDistance() - 60)))
-                    status = STATUS_ENUM.FACE_TO_FACE;
-                else
-                    status = STATUS_ENUM.UPDATE_IMAGE;
+                       status = STATUS_ENUM.FACE_TO_FACE;
+                }
                 break;
             case FACE_TO_FACE:
                 mDEBUG_TEXT = "6. Monitor szembe allitasa";
-                if (frontBestSquare()) {
+                if (faceToFace()) {
                     status = STATUS_ENUM.END;
                     mDEBUG_TEXT = "Kesz";
-                } else
-                    status = STATUS_ENUM.UPDATE_IMAGE;
-                break;
-            case UPDATE_IMAGE:
-                if (mCam.isFound())
-                    status = STATUS_ENUM.ALIGN_CENTER;
-                else
-                    status = STATUS_ENUM.SCAN_MONITOR;
-
-                spiralVar = 0;
+                }
                 break;
             default:
                 break;
@@ -110,7 +99,7 @@ public class MainManager {
         Log.v("ford", mDEBUG_TEXT);
         if (mRobot.isArrived())
             nextStatus();
-        else
+        else if (status != STATUS_ENUM.END)
             update();
     }
 
@@ -150,7 +139,7 @@ public class MainManager {
     }
 
     // mukodik!
-    public boolean frontBestSquare() {
+    public boolean faceToFace() {
         double szogFault = 20;
 
         if (Math.abs(Math.toDegrees(mCam.getDirection()) - 90) < szogFault) {
@@ -163,7 +152,7 @@ public class MainManager {
         mRobot.rot(90);
         mRobot.forward(oldalra);
         mRobot.rot((int) Math.round(-Math.toDegrees(mCam.getDirection())));
-        return true;
+        return false;
     }
 
     public boolean closerToMonitor() {

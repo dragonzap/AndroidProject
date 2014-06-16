@@ -1,5 +1,7 @@
 package org.android.project.type;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,11 +45,16 @@ public class RobotManager {
         actions.add(a);
     }
 
+    private double _r = 0, x = 0, y = 0;
+
     // Robot elvegzet egy feladatot
     public boolean nextAction() {
         if (actions.isEmpty()) {
             mDEBUG = "";
-            mMain.arrived();
+            mMain.arrived(Math.sqrt(x*x+y*y), _r);
+            x=0;
+            y=0;
+            _r=0;
             return true;
         }
 
@@ -58,8 +65,13 @@ public class RobotManager {
                 mDEBUG = "mentem elore " + Long.toString(Math.round(a.value)) + "cm-t";
             else
                 mDEBUG = "mentem hatra " + Long.toString(-Math.round(a.value)) + "cm-t";
-        } else
+
+            x += Math.cos(_r) * a.value;
+            y += Math.sin(_r) * a.value;
+        } else {
             mDEBUG = "elfordultam " + Long.toString(Math.round(Math.toDegrees(a.value))) + " fokot";
+            _r -= a.value;
+        }
 
         actions.remove(0);
         return false;

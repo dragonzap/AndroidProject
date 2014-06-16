@@ -16,6 +16,7 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import android.os.AsyncTask;
+import android.util.Log;
 
 public class CamManager {
     // SETTINGS:
@@ -39,13 +40,16 @@ public class CamManager {
     private double direction = 0;   // radians
 
     private List<Point[]> result = new ArrayList<Point[]>();
-    private Point[] lastMonitor = new Point[4];
+  //  private Point[] lastMonitor = new Point[4];
     private Point[] newMonitor = new Point[4];
     private Mat mImage, mOutImg;
     private double oldHeight1 = 0;  // px
     private double oldHeight2 = 0;  // px
     private double newHeight1 = 0;  // px
     private double newHeight2 = 0;  // px
+
+    private double dispDistance = 0, dispAngle = 0;
+    private boolean img_proc = false;
 
     private MainManager mMain;
 
@@ -88,6 +92,9 @@ public class CamManager {
 
     // Kamera kep frissitese
     public void setFrame(CvCameraViewFrame _frame) {
+        if (img_proc)
+            return;
+
         mImage.release();
         mImage = _frame.rgba();
         mOutImg.release();
@@ -100,11 +107,22 @@ public class CamManager {
     }
 
     // Monitor keresese
-    public void scanMonitor() {
+    public void scanMonitor(double _d, double _a){
         // Ha nincs még feldolgozás alatt
         if (!busy) {
             rescan = found ? MONITOR_RESCAN : MONITOR_SCAN;
-            new ImageScanner().execute(mImage.clone());
+
+            if (found)
+            {
+                dispDistance += _d;
+                dispAngle += _a;
+            }
+            else
+            {
+                dispDistance = 0;
+                dispAngle = 0;
+            }
+            new ImageScanner().execute();
         }
     }
 
@@ -122,23 +140,26 @@ public class CamManager {
     }
 
     // Utolso elmozdulas cm
-    public boolean setDisplacement(int _disp) {
+    private void calculate() {
         /* Kamera tavolsaganak kiszamolasa a regi es az uj kep segitsegevel
                  Megnezi hogy a vizsgalt targy DIST_STEP meretu kozelitesre mennyivel no meg. */
         double newHeightAVG = (newHeight1 + newHeight2) / 2.f;   // px (AVG)
         double oldHeightAVG = (oldHeight1 + oldHeight2) / 2.f;   // px (AVG)
+        double oldDist = distance;
+        double oldDir = direction;
 
         // Ha tul kicsi a kulombseg,nem lehet tavolsagot becsulni
-        if (Math.abs(oldHeightAVG - newHeightAVG) < 2) {
+        if (dispDistance == 0 || dispAngle != 0 || oldHeightAVG == newHeightAVG || newHeight1 == oldHeight1 || newHeight2 == oldHeight2) {
             distance=0;
             direction=0;
-            return false;
+            Log.v("ford", "Hiba az elmozdulasnal");
+            return;
         }
 
         // Kiszamolja a tavolsagokat
-        distance = _disp * oldHeightAVG / (newHeightAVG - oldHeightAVG);  // cm kozepe
-        oldHeight1 = _disp * oldHeight1 / (newHeight1 - oldHeight1);   // cm baloldal
-        oldHeight2 = _disp * oldHeight2 / (newHeight2 - oldHeight2);   // cm jobb oldal
+        distance = dispDistance * oldHeightAVG / (newHeightAVG - oldHeightAVG);  // cm kozepe
+        double d1 = dispDistance * oldHeight1 / (newHeight1 - oldHeight1);   // cm baloldal
+        double d2 = dispDistance * oldHeight2 / (newHeight2 - oldHeight2);   // cm jobb oldal
 
         // Milyen szelesnek latszik a kepernyo
         double projWidth = Math.abs(newMonitor[0].x + newMonitor[3].x - newMonitor[1].x - newMonitor[2].x) / 2.f; //px
@@ -150,28 +171,34 @@ public class CamManager {
                  camera         \--------
                 /     mDist      \      |
                *------------------|     | projWidth
-               |    oldHeight?     \    |
+               |        d          \    |
                |--------------------\----
             */
-        //Elfordultsag kiszamitasa (nem bizonyitjuk :P )
-        direction = Math.atan((Math.max(oldHeight1, oldHeight2) - distance) / (projWidth / 2)); // radians
-        if (oldHeight1 > oldHeight2)
+        // Elfordultsag kiszamitasa (nem bizonyitjuk :P )
+        direction = Math.atan((Math.max(d1, d2) - distance) / (projWidth / 2)); // radian
+        if (d1 > d2)
             direction = Math.PI / 2 + direction;
         else
             direction = Math.PI / 2 - direction;
 
-        return true;
-
+        if (oldDist != 0)
+        {
+            Log.v("ford", "Tavolsag becsles hibaja:" + Double.toString(oldDist - distance - dispDistance));
+            Log.v("ford", "Elfordulas becsles hibaja:" + Double.toString(Math.toDegrees(oldDir) - Math.toDegrees(direction)));
+        }
     }
 
     private double getDistance(Point a, Point b) {
         return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
     }
 
-    private class ImageScanner extends AsyncTask<Mat, Integer, Boolean> {
-        protected Boolean doInBackground(Mat... img) {
+    private class ImageScanner extends AsyncTask<Void, Integer, Boolean> {
+        protected Boolean doInBackground(Void... n) {
+            img_proc = true;
+            Mat img = mImage.clone();
+            img_proc = false;
             busy = true;
-            if (scanSquares(img[0])) {
+            if (scanSquares(img)) {
                 if (selectMonitor())
                     return true;
             }
@@ -190,9 +217,11 @@ public class CamManager {
                 oldHeight2 = newHeight2;
                 newHeight1 = getDistance(newMonitor[0], newMonitor[3]);
                 newHeight2 = getDistance(newMonitor[1], newMonitor[2]);
+                calculate();
+
                 busy = false;
             } else if (rescan > 0)
-                new ImageScanner().execute(mImage.clone());
+                new ImageScanner().execute();
             else
                 busy = false;
 
@@ -206,8 +235,8 @@ public class CamManager {
             return false;
 
         // zajtalanitas
-        Imgproc.pyrDown(_img, timg, new Size(mImage.cols() / 2.0, mImage.rows() / 2));
-        Imgproc.pyrUp(timg, timg, mImage.size());
+        Imgproc.pyrDown(_img, timg, new Size(_img.cols() / 2.0, _img.rows() / 2));
+        Imgproc.pyrUp(timg, timg, _img.size());
 
         List<Mat> timgL = new ArrayList<Mat>(), grayL = new ArrayList<Mat>();
         timgL.add(timg);
@@ -279,8 +308,8 @@ public class CamManager {
             {
                 double area = w * h2; // terület
                 if (area > maxArea) {
-                    if (!found)
-                        lastMonitor = newMonitor;
+                   /* if (!found)
+                        lastMonitor = newMonitor;*/
 
                     newMonitor = i;
                     maxArea = area;
