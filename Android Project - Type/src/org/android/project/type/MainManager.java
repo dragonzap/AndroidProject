@@ -51,10 +51,7 @@ public class MainManager {
 
     public void nextStatus() {
         // Megerkezett-e a celhoz
-        if (!mRobot.isArrived())
-            return;
-
-        if (!mCam.isReady())
+        if (!mRobot.isArrived() || !mCam.isReady() || end)
             return;
 
         // Ha nincs kamera elkezd keresni
