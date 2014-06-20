@@ -43,16 +43,14 @@ public class RobotManager {
         actions.add(a);
     }
 
-    private double _r = 0, x = 0, y = 0;
+    private double dispAngle = 0, dispX = 0, dispY = 0;
 
     // Robot elvegzet egy feladatot
     public boolean nextAction() {
         if (actions.isEmpty()) {
             mDEBUG = "";
-            mMain.arrived(Math.sqrt(x*x+y*y), _r);
-            x=0;
-            y=0;
-            _r=0;
+            mMain.arrived(Math.sqrt(Math.pow(dispX, 2) + Math.pow(dispY, 2)), dispAngle);
+            dispAngle = dispX = dispY = 0.0;
             return true;
         }
 
@@ -64,11 +62,11 @@ public class RobotManager {
             else
                 mDEBUG = "mentem hatra " + Long.toString(-Math.round(a.value)) + "cm-t";
 
-            x += Math.cos(_r) * a.value;
-            y += Math.sin(_r) * a.value;
+            dispX += Math.cos(dispAngle) * a.value;
+            dispY += Math.sin(dispAngle) * a.value;
         } else {
             mDEBUG = "elfordultam " + Long.toString(Math.round(Math.toDegrees(a.value))) + " fokot";
-            _r -= a.value;
+            dispAngle -= a.value;
         }
 
         actions.remove(0);

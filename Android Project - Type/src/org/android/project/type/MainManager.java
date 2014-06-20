@@ -32,18 +32,23 @@ public class MainManager {
         if (end)
             return;
 
-        if (mCam.isReady()) // ha a kamera nem dolgozik
-            mRobot.nextAction();    // mozoghat a robot
+        try {
+            if (mCam.isReady()) // ha a kamera nem dolgozik
+                mRobot.nextAction();    // mozoghat a robot
 
-        if (!mRobot.mDEBUG.isEmpty())
-            Log.v("ford", mRobot.mDEBUG);
+            if (!mRobot.mDEBUG.isEmpty())
+                Log.v("ford", mRobot.mDEBUG);
+        } catch (RuntimeException e) {
+            mDEBUG_TEXT = "Meghaltam";
+            end = true;
+        }
+
+
     }
 
     public void arrived(double distance, double angle) {
-        if (mCam.isReady())
+        if (!end && mCam.isReady())
             mCam.scanMonitor(distance, angle);
-
-        //    Log.v("ford", "Camera foglalt");
     }
 
     public void nextStatus() {
@@ -103,7 +108,7 @@ public class MainManager {
         }
 
         Log.v("ford", mDEBUG_TEXT);
-        if (mRobot.isArrived())
+        if (!mRobot.isArrived())
             nextStatus();
         else if (status != STATUS_ENUM.END)
             update();
@@ -119,8 +124,9 @@ public class MainManager {
         Mat _img = mCam.getDebugFrame();
 
         // Draw robot parameters
-        Core.putText(_img, mDEBUG_TEXT, new Point(0, 20), 1, 2, new Scalar(0, 255, 0));
-        Core.putText(_img, mRobot.mDEBUG, new Point(0, 60), 1, 3, new Scalar(255, 128, 255));
+        Core.putText(_img, mDEBUG_TEXT, new Point(0, 30), 1, 2, new Scalar(0, 255, 0));
+        Core.putText(_img, mRobot.mDEBUG, new Point(0, 60), 1, 2, new Scalar(255, 128, 255));
+        Core.putText(_img, mCam.mDEBUG, new Point(0, 90), 1, 2, new Scalar(255, 255, 128));
         return _img;
     }
 

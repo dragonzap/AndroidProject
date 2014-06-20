@@ -146,19 +146,24 @@ public class CamManager {
         double oldHeightAVG = (oldHeight1 + oldHeight2) / 2.f;   // px (AVG)
         double oldDist = distance;
         double oldDir = direction;
+        mDEBUG = "old/new: " + Double.toString(oldHeightAVG) + "/" + Double.toString(newHeightAVG);
 
         // Ha tul kicsi a kulombseg,nem lehet tavolsagot becsulni
         if (dispDistance == 0 || dispAngle != 0 || oldHeightAVG == newHeightAVG || newHeight1 == oldHeight1 || newHeight2 == oldHeight2) {
             distance = 0;
             direction = 0;
-            Log.v("ford", "Hiba az elmozdulasnal");
+//            if (dispDistance != 0 && dispAngle == 0) {
+                mDEBUG = "Hiba az emlozdulasnal: disp:" + Double.toString(dispDistance) + "cm;" + Double.toString(dispAngle) + "deg height dif.:" + Double.toString(newHeight1 - oldHeight1) + "px;"+ Double.toString(newHeightAVG - oldHeightAVG) + "px;"+ Double.toString(newHeight2 - oldHeight2) + "px";
+                Log.v("ford", mDEBUG);
+           // }
             return;
         }
 
         // Kiszamolja a tavolsagokat
         distance = dispDistance * oldHeightAVG / (newHeightAVG - oldHeightAVG);  // cm kozepe
-        double d1 = dispDistance * oldHeight1 / (newHeight1 - oldHeight1);   // cm baloldal
+        double d1 = dispDistance * oldHeight1 / (newHeight1 - oldHeight1);   // cm bal oldal
         double d2 = dispDistance * oldHeight2 / (newHeight2 - oldHeight2);   // cm jobb oldal
+        mDEBUG += " dist.: " + Double.toString(d1) + ";" + Double.toString(distance) + ";" + Double.toString(d2);
 
         // Milyen szelesnek latszik a kepernyo
         double projWidth = Math.abs(newMonitor[0].x + newMonitor[3].x - newMonitor[1].x - newMonitor[2].x) / 2.f; //px
