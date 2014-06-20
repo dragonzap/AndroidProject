@@ -42,8 +42,6 @@ public class MainManager {
             mDEBUG_TEXT = "Meghaltam";
             end = true;
         }
-
-
     }
 
     public void arrived(double distance, double angle) {
@@ -108,9 +106,9 @@ public class MainManager {
         }
 
         Log.v("ford", mDEBUG_TEXT);
-        if (!mRobot.isArrived())
-            nextStatus();
-        else if (status != STATUS_ENUM.END)
+        if (mRobot.isArrived()) // ha nem kell mozogni
+            nextStatus();       // újból végrehajtja
+        else
             update();
     }
 
