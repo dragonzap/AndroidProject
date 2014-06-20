@@ -19,6 +19,8 @@ import android.os.AsyncTask;
 import android.util.Log;
 
 public class CamManager {
+    public String mDEBUG = "";
+
     // SETTINGS:
     static int CAM_WIDTH = 1280;        // px
     static int CAM_HEIGHT = 800;        // px
@@ -40,7 +42,7 @@ public class CamManager {
     private double direction = 0;   // radians
 
     private List<Point[]> result = new ArrayList<Point[]>();
-  //  private Point[] lastMonitor = new Point[4];
+    //  private Point[] lastMonitor = new Point[4];
     private Point[] newMonitor = new Point[4];
     private Mat mImage, mOutImg;
     private double oldHeight1 = 0;  // px
@@ -72,6 +74,22 @@ public class CamManager {
         mOutImg.release();
     }
 
+    // Kamera kep frissitese
+    public void setFrame(CvCameraViewFrame _frame) {
+        if (img_proc)
+            return;
+
+        mImage.release();
+        mImage = _frame.rgba();
+        mOutImg.release();
+        mOutImg = mImage.clone();
+    }
+
+    public Mat getDebugFrame() {
+        drawDebug();
+        return mOutImg;
+    }
+
     public boolean isReady() {
         return !busy;
     }
@@ -90,35 +108,16 @@ public class CamManager {
         return direction;
     }
 
-    // Kamera kep frissitese
-    public void setFrame(CvCameraViewFrame _frame) {
-        if (img_proc)
-            return;
-
-        mImage.release();
-        mImage = _frame.rgba();
-        mOutImg.release();
-        mOutImg = mImage.clone();
-    }
-
-    public Mat getDebugFrame() {
-        drawDebug();
-        return mOutImg;
-    }
-
     // Monitor keresese
-    public void scanMonitor(double _d, double _a){
+    public void scanMonitor(double _d, double _a) {
         // Ha nincs még feldolgozás alatt
         if (!busy) {
             rescan = found ? MONITOR_RESCAN : MONITOR_SCAN;
 
-            if (found)
-            {
+            if (found) {
                 dispDistance += _d;
                 dispAngle += _a;
-            }
-            else
-            {
+            } else {
                 dispDistance = 0;
                 dispAngle = 0;
             }
@@ -150,8 +149,8 @@ public class CamManager {
 
         // Ha tul kicsi a kulombseg,nem lehet tavolsagot becsulni
         if (dispDistance == 0 || dispAngle != 0 || oldHeightAVG == newHeightAVG || newHeight1 == oldHeight1 || newHeight2 == oldHeight2) {
-            distance=0;
-            direction=0;
+            distance = 0;
+            direction = 0;
             Log.v("ford", "Hiba az elmozdulasnal");
             return;
         }
@@ -181,8 +180,7 @@ public class CamManager {
         else
             direction = Math.PI / 2 - direction;
 
-        if (oldDist != 0)
-        {
+        if (oldDist != 0) {
             Log.v("ford", "Tavolsag becsles hibaja:" + Double.toString(oldDist - distance - dispDistance));
             Log.v("ford", "Elfordulas becsles hibaja:" + Double.toString(Math.toDegrees(oldDir) - Math.toDegrees(direction)));
         }
@@ -204,10 +202,6 @@ public class CamManager {
             }
             return false;
         }
-
-        /*protected void onProgressUpdate(Integer... progress) {
-            setProgressPercent(progress[0]);
-        }*/
 
         protected void onPostExecute(Boolean result) {
             rescan--;
@@ -270,9 +264,8 @@ public class CamManager {
                     MatOfPoint points = new MatOfPoint(approx.toArray());
 
                     // hasznos negyszogek kivalogatasa
-                    if (points.toArray().length == 4 && Math.abs(Imgproc.contourArea(approx)) > MIN_SQUARE_SIZE && Imgproc.isContourConvex(points)) {
+                    if (points.toArray().length == 4 && Math.abs(Imgproc.contourArea(approx)) > MIN_SQUARE_SIZE && Imgproc.isContourConvex(points))
                         result.add(sortPoints(points));
-                    }
                 }
             }
         }

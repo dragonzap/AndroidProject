@@ -13,12 +13,14 @@ public class MainManager {
     static int DIST_STEP = 5;
     static int ALIGN_THRESH = 10; // % ( CAM_WIDTH / 100 * ALIGN_TRESH tavolsag ( px ))
     static int ALIGN_ROT = 5;  // degrees
+    static int GOOD_DISTANCE = 60;  // cm
 
     private CamManager mCam;
     private RobotManager mRobot;
     private STATUS_ENUM status = STATUS_ENUM.SCAN_MONITOR;
     private double spiralVar = 0;
     private String mDEBUG_TEXT;
+    private boolean end = false;
 
     public MainManager(int _w, int _h) {
         mCam = new CamManager(_w, _h, this);
@@ -27,7 +29,11 @@ public class MainManager {
     }
 
     public void update() {
-        mRobot.nextAction();
+        if (end)
+            return;
+
+        if (mCam.isReady()) // ha a kamera nem dolgozik
+            mRobot.nextAction();    // mozoghat a robot
 
         if (!mRobot.mDEBUG.isEmpty())
             Log.v("ford", mRobot.mDEBUG);
@@ -36,8 +42,8 @@ public class MainManager {
     public void arrived(double distance, double angle) {
         if (mCam.isReady())
             mCam.scanMonitor(distance, angle);
-        else
-            Log.v("ford", "Camera foglalt");
+
+        //    Log.v("ford", "Camera foglalt");
     }
 
     public void nextStatus() {
@@ -71,7 +77,6 @@ public class MainManager {
                 }
                 break;
             case DISTANCE:
-
                 if (mCam.getDistance() != 0)
                     status = STATUS_ENUM.CLOSE_TO;
                 else {
@@ -89,6 +94,7 @@ public class MainManager {
                 mDEBUG_TEXT = "6. Monitor szembe allitasa";
                 if (faceToFace()) {
                     status = STATUS_ENUM.END;
+                    end = true;
                     mDEBUG_TEXT = "Kesz";
                 }
                 break;
@@ -115,13 +121,6 @@ public class MainManager {
         // Draw robot parameters
         Core.putText(_img, mDEBUG_TEXT, new Point(0, 20), 1, 2, new Scalar(0, 255, 0));
         Core.putText(_img, mRobot.mDEBUG, new Point(0, 60), 1, 3, new Scalar(255, 128, 255));
-
-        //Draw position
-        /*Core.putText(mCam.getDebugFrame(), "Dist: " + Double.toString(mCam.mDist) + "cm Dir: " + Double.toString(mCam.mDir * 57.2957795d) + "deg", new Point(0, height - 60), 1, 2,
-                new Scalar(0, 255, 0));
-
-        Core.putText(mCam.getDebugFrame(), "h1: " + Double.toString(Math.round(mCam.mWidth)) + " h2: " + Double.toString(Math.round(mCam.mHeight)) + " size:" + Double.toString(Math.round(mCam.mSize)) + "col", new Point(0, height - 30), 1, 2,
-                new Scalar(0, 255, 0));*/
         return _img;
     }
 
@@ -156,9 +155,9 @@ public class MainManager {
     }
 
     public boolean closerToMonitor() {
-        if (mCam.getDistance() > 60)// Ha messzebb van mint 60cm akkor kozelebb megy
+        if (mCam.getDistance() > GOOD_DISTANCE)// Ha messzebb van mint 60cm akkor kozelebb megy
         {
-            mRobot.forward(mCam.getDistance() - 60);
+            mRobot.forward(mCam.getDistance() - GOOD_DISTANCE);
             return false;
         } else {
             Log.v("ford", "A monitor a megfelelo tavolsagban van");
