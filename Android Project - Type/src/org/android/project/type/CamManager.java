@@ -27,12 +27,11 @@ public class CamManager {
     static short MIN_SQUARE_SIZE = 1000;// px^2
     static byte MONITOR_SCAN = 5;       // nincs azonostitott monitor
     static byte MONITOR_RESCAN = 5;     // van azonositott monitor
-    static float ASPECT_THRESH = 1.f;   //0.2f;
+    static float ASPECT_THRESH = 0.2f;
     static byte THRESH = 50;
     static byte THRESH_LEVEL = 1;
     static double CAM_H_FOV = 0.58318276339d;    // tg( 60.5° / 2 )
     //static double CAM_V_FOV = 0.44732161718d;  // tg( 48.2° / 2 )
-
 
     private byte rescan = 0;
     private boolean busy = false;
@@ -115,8 +114,8 @@ public class CamManager {
             rescan = found ? MONITOR_RESCAN : MONITOR_SCAN;
 
             if (found) {
-                dispDistance += _d;
-                dispAngle += _a;
+                dispDistance = _d;
+                dispAngle = _a;
             } else {
                 dispDistance = 0;
                 dispAngle = 0;

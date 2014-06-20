@@ -50,7 +50,7 @@ public class RobotManager {
         if (actions.isEmpty()) {
             mDEBUG = "";
             mMain.arrived(Math.sqrt(Math.pow(dispX, 2) + Math.pow(dispY, 2)), dispAngle);
-            dispAngle = dispX = dispY = 0.0;
+            dispAngle = dispX = dispY = 0.0d;
             return true;
         }
 
