@@ -25,11 +25,11 @@ public class CamManager {
     static int CAM_WIDTH = 1280;        // px
     static int CAM_HEIGHT = 800;        // px
     static short MIN_SQUARE_SIZE = 1000;// px^2
-    static byte MONITOR_SCAN = 5;       // nincs azonostitott monitor
+    static byte MONITOR_SCAN = 2;       // nincs azonostitott monitor
     static byte MONITOR_RESCAN = 5;     // van azonositott monitor
     static float ASPECT_THRESH = 0.2f;
     static byte THRESH = 50;
-    static byte THRESH_LEVEL = 1;
+    static byte THRESH_LEVEL = 5;
     static double CAM_H_FOV = 0.58318276339d;    // tg( 60.5° / 2 )
     //static double CAM_V_FOV = 0.44732161718d;  // tg( 48.2° / 2 )
 
@@ -151,10 +151,10 @@ public class CamManager {
         if (dispDistance == 0 || dispAngle != 0 || oldHeightAVG == newHeightAVG || newHeight1 == oldHeight1 || newHeight2 == oldHeight2) {
             distance = 0;
             direction = 0;
-//            if (dispDistance != 0 && dispAngle == 0) {
+            if (dispDistance != 0 && dispAngle == 0) {
                 mDEBUG = "Hiba az emlozdulasnal: disp:" + Double.toString(dispDistance) + "cm;" + Double.toString(dispAngle) + "deg height dif.:" + Double.toString(newHeight1 - oldHeight1) + "px;"+ Double.toString(newHeightAVG - oldHeightAVG) + "px;"+ Double.toString(newHeight2 - oldHeight2) + "px";
                 Log.v("ford", mDEBUG);
-           // }
+            }
             return;
         }
 
