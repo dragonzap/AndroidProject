@@ -11,8 +11,9 @@ import android.util.Log;
 public class MainManager {
     // SETTINGS:
     static int DIST_STEP = 5;
-    static int ALIGN_THRESH = 10; // % ( CAM_WIDTH / 100 * ALIGN_TRESH tavolsag ( px ))
-    static int ALIGN_ROT = 5;  // degrees
+    static int ALIGN_THRESH = 10;   // % ( CAM_WIDTH / 100 * ALIGN_TRESH tavolsag ( px ))
+    static int ANGLE_THRESH = 20;   // degrees
+    static int ALIGN_ROT = 5;       // degrees
     static int GOOD_DISTANCE = 60;  // cm
 
     private CamManager mCam;
@@ -140,9 +141,7 @@ public class MainManager {
 
     // mukodik!
     public boolean faceToFace() {
-        double szogFault = 20;
-
-        if (Math.abs(Math.toDegrees(mCam.getDirection()) - 90) < szogFault) {
+        if (Math.abs(Math.toDegrees(mCam.getDirection()) - 90) < ANGLE_THRESH) {
             Log.v("ford", "A kamera szemben van a monitorral");
             return true;
         }
