@@ -121,7 +121,7 @@ public class MainManager {
         // Draw robot parameters
         Core.putText(_img, mDEBUG_TEXT, new Point(0, 30), 1, 2, new Scalar(0, 255, 0));
         Core.putText(_img, mRobot.mDEBUG, new Point(0, 60), 1, 2, new Scalar(255, 128, 255));
-        Core.putText(_img, mCam.mDEBUG, new Point(0, 90), 1, 2, new Scalar(255, 255, 128));
+        //Core.putText(_img, mCam.mDEBUG, new Point(0, 90), 1, 2, new Scalar(255, 255, 128));
         return _img;
     }
 
